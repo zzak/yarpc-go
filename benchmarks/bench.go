@@ -18,47 +18,9 @@ func (ss *stringSet) Keys() []string {
 	return keys
 }
 
-var valid = struct {
-	transports stringSet
-	clients    stringSet
-	servers    stringSet
-	encodings  stringSet
-	payloads   stringSet
-}{
-	transports: map[string]struct{}{
-		"tchannel": {},
-		"http":     {},
-	},
-	clients: map[string]struct{}{
-		"yarpc":  {},
-		"native": {},
-	},
-	servers: map[string]struct{}{
-		"yarpc":  {},
-		"native": {},
-	},
-	encodings: map[string]struct{}{
-		"raw":    {},
-		"json":   {},
-		"thrift": {},
-	},
-	payloads: map[string]struct{}{
-		"16b":   {},
-		"64b":   {},
-		"512b":  {},
-		"1kib":  {},
-		"4kib":  {},
-		"64kib": {},
-	},
-}
-
 type flagSet struct {
 	values []string
-	valid  *stringSet
-}
-
-func newFlagSet(valid *stringSet) flagSet {
-	return flagSet{valid: valid}
+	valids stringSet
 }
 
 func (fs *flagSet) String() string {
@@ -78,41 +40,53 @@ func (fs *flagSet) Set(value string) error {
 		return fmt.Errorf("At least one value must be specified")
 	}
 	for v := range values {
-		if _, ok := (*fs.valid)[v]; !ok {
+		if _, ok := fs.valids[v]; !ok {
 			return fmt.Errorf("Invalid value %q (choose from: %s)", v,
-				strings.Join(fs.valid.Keys(), ", "))
+				strings.Join(fs.valids.Keys(), ", "))
 		}
 		fs.values = append(fs.values, v)
 	}
 	return nil
 }
 
-func flagSetVar(fs *flagSet, name string) {
-	flag.Var(fs, name,
+func flagStringSet(name string, valids []string) *flagSet {
+	fs := flagSet{valids: stringSet{}}
+	for _, v := range valids {
+		fs.valids[v] = struct{}{}
+	}
+	flag.Var(&fs, name,
 		fmt.Sprintf("comma separated list of %s to use (default: %s)", name,
-			strings.Join(fs.valid.Keys(), ", ")))
+			strings.Join(fs.valids.Keys(), ", ")))
+	return &fs
 }
 
+var (
+	flagSpawn = flag.String("spawn", "", "spawn a client/server")
+
+	flagTransports = flagStringSet("transports", []string{
+		"tchannel", "http",
+	})
+	flagClients = flagStringSet("clients", []string{
+		"yarpc", "direct",
+	})
+	flagServers = flagStringSet("servers", []string{
+		"yarpc", "direct",
+	})
+	flagEncodings = flagStringSet("encodings", []string{
+		"raw", "json", "thrift",
+	})
+	flagPayloads = flagStringSet("payloads", []string{
+		"16b", "64b", "512b", "1kib", "4kib", "64kib",
+	})
+
+	flagSpawnClient = flag.Bool("spawn_client", false,
+		"spawn external process for client instead of server (useful for profiling the server during a benchmark)")
+)
+
 func main() {
-	var (
-		spawn = flag.String("spawn", "",
-			"internally used to spawn benchmark client/server on different processes")
-
-		transports = newFlagSet(&valid.transports)
-		clients    = newFlagSet(&valid.clients)
-		servers    = newFlagSet(&valid.servers)
-		encodings  = newFlagSet(&valid.encodings)
-		payloads   = newFlagSet(&valid.payloads)
-	)
-	flagSetVar(&transports, "transports")
-	flagSetVar(&clients, "clients")
-	flagSetVar(&servers, "servers")
-	flagSetVar(&encodings, "encodings")
-	flagSetVar(&payloads, "payloads")
-
 	flag.Parse()
 
-	if *spawn == "" {
+	if *flagSpawn == "" {
 		benchMain()
 	} else {
 		spawnPeer()
@@ -120,7 +94,7 @@ func main() {
 }
 
 func benchMain() {
-	log.Printf("starting benchmarks")
+	log.Printf("Running benchmark for:")
 	bcfg := benchConfig{
 		impl:        "yarpc",
 		transport:   "http",
