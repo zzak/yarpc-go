@@ -1,4 +1,4 @@
-package yarpc_test
+package main
 
 import (
 	"bytes"
@@ -24,10 +24,6 @@ import (
 )
 
 var _reqBody = []byte("hello")
-
-func yarpcEcho(ctx context.Context, reqMeta yarpc.ReqMeta, body []byte) ([]byte, yarpc.ResMeta, error) {
-	return body, yarpc.NewResMeta().Headers(reqMeta.Headers()), nil
-}
 
 func httpEcho(t testing.TB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
