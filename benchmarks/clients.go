@@ -54,16 +54,12 @@ func newLocalClient(cfg benchConfig, endpoint string) localClient {
 	}
 }
 
-func runYARPCClient(b *testing.B, c raw.Client) {
-}
-
 func (c *yarpcHTTPClient) Warmup() {
 	b := testing.B{N: 10}
 	c.RunBenchmark(&b)
 }
 
 func (c *yarpcHTTPClient) RunBenchmark(b *testing.B) {
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
