@@ -17,7 +17,7 @@ var allAxes = map[string][]string{
 	"clients":    {"yarpc", "direct"},
 	"servers":    {"yarpc", "direct"},
 	"encodings":  {"raw", "json", "thrift"},
-	"payloads":   {"16b", "64b", "512b", "1kib", "4kib", "64kib"},
+	"payloads":   {"16b", "64b", "512b", "1kb", "4kb", "64kb"},
 }
 
 type stringSet map[string]struct{}
@@ -146,10 +146,31 @@ func benchMain() {
 
 	var results []testing.BenchmarkResult
 	for i, c := range combinations {
-		log.Printf("%d/%d (%d%%) %s", i+1, len(combinations), (i+1)*100/len(combinations), c)
+		msg := fmt.Sprintf("%d/%d (%d%%)", i+1, len(combinations),
+			(i+1)*100/len(combinations))
+
+		yarpcClient := (c["client"] == "yarpc")
+		yarpcServer := (c["server"] == "yarpc")
+
+		switch {
+		case yarpcClient && yarpcServer:
+			msg += fmt.Sprintf(" %s -> %s -> %s", c["client"], c["transport"], c["server"])
+		case !yarpcClient && yarpcServer:
+			msg += fmt.Sprintf(" %s -> %s", c["transport"], c["server"])
+		case yarpcClient && !yarpcServer:
+			msg += fmt.Sprintf(" %s -> %s", c["client"], c["transport"])
+		case !yarpcClient && !yarpcServer:
+			msg += fmt.Sprintf(" %s -> %s", c["transport"], c["transport"])
+		}
+		msg += fmt.Sprintf(" %s(%s)", c["encoding"], c["payload"])
+		log.Print(msg)
+
 		payloadBytes, err := bytefmt.ToBytes(c["payload"])
+		if err != nil {
+			panic(err)
+		}
 		cfg := benchConfig{
-			client:       c["server"],
+			client:       c["client"],
 			server:       c["server"],
 			transport:    c["transport"],
 			encoding:     c["encoding"],
