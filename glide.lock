@@ -1,8 +1,10 @@
-hash: 29fb0512ba9ccdda4f2aa1b0f0566089fc3c2a0a251e83162e406c2bc1ab6698
-updated: 2016-11-11T17:07:08.003028758-08:00
+hash: 6b9ab5ec22e5a1b26f74ba669f9b02fe0399c0b37e41606a59b839503efd4791
+updated: 2016-11-16T16:07:32.517927953-08:00
 imports:
+- name: code.cloudfoundry.org/bytefmt
+  version: b12c1522f4cbb5f35861bd5dd2c39a4fa996441a
 - name: github.com/apache/thrift
-  version: fd832242bba9d4eaba71c7c08e8eed440b106f98
+  version: 74c99ba38b02288daf05229cdf34e60261d2d01e
   subpackages:
   - lib/go/thrift
 - name: github.com/crossdock/crossdock-go
@@ -78,7 +80,7 @@ imports:
   - version
   - wire
 - name: golang.org/x/net
-  version: 0e2717dc3cc05907dc23096ef3a9086ea93f567f
+  version: 4971afdc2f162e82d185353533d3cf16188a9f4e
   subpackages:
   - context
   - context/ctxhttp

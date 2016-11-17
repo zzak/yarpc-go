@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"testing"
 
 	"go.uber.org/yarpc"
@@ -42,9 +41,7 @@ func newLocalClient(cfg benchConfig, endpoint string) localClient {
 }
 
 func (c yarpcHTTPClient) Warmup() {
-	log.Printf("warming up!")
 }
 
 func (c yarpcHTTPClient) RunBenchmark(b *testing.B) {
-	log.Printf("running benchmarks")
 }
