@@ -30,6 +30,7 @@ import (
 	"go.uber.org/yarpc/encoding/raw"
 	"go.uber.org/yarpc/transport"
 	"go.uber.org/yarpc/transport/http"
+	"go.uber.org/yarpc/transport/redis"
 
 	"github.com/crossdock/crossdock-go"
 )
@@ -70,7 +71,8 @@ func newDispatcher(t crossdock.T) yarpc.Dispatcher {
 		Name: "client",
 		Outbounds: yarpc.Outbounds{
 			"oneway-test": {
-				Oneway: http.NewOutbound(fmt.Sprintf("http://%s:8084", server)),
+				// Oneway: http.NewOutbound(fmt.Sprintf("http://%s:8084", server)),
+				Oneway: redis.NewOnewayOutbound(redis.NewRedis5Client("localhost", 6379, "yarpc/queue")),
 			},
 		},
 		//for call back

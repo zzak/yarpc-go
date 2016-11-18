@@ -61,79 +61,79 @@ func TestCrossdock(t *testing.T) {
 				"encoding": []string{"raw", "json", "thrift"},
 			},
 		},
-		{
-			name: "raw",
+		// {
+		// 	name: "raw",
 
-			axes: axes{"transport": []string{"http", "tchannel"}},
-		},
-		{
-			name: "json",
-			axes: axes{"transport": []string{"http", "tchannel"}},
-		},
-		{
-			name: "thrift",
-			axes: axes{"transport": []string{"http", "tchannel"}},
-		},
-		{
-			name: "errors_httpclient",
-		},
-		{
-			name: "errors_tchclient",
-		},
-		{
-			name: "headers",
-			axes: axes{
-				"transport": []string{"http", "tchannel"},
-				"encoding":  []string{"raw", "json", "thrift"},
-			},
-		},
-		{
-			name: "tchclient",
-			axes: axes{
-				"encoding": []string{"raw", "json", "thrift"},
-			},
-		},
-		{
-			name: "tchserver",
-			axes: axes{
-				"encoding": []string{"raw", "json", "thrift"},
-			},
-		},
-		{
-			name: "httpserver",
-			params: params{
-				"httpserver": "127.0.0.1",
-			},
-		},
-		{
-			name: "thriftgauntlet",
-			axes: axes{
-				"transport": []string{"http", "tchannel"},
-			},
-		},
-		{
-			name: "timeout",
-			axes: axes{
-				"transport": []string{"http", "tchannel"},
-			},
-		},
-		{
-			name: "ctxpropagation",
-			axes: axes{
-				"transport": []string{"http", "tchannel"},
-			},
-			params: params{
-				"ctxserver": "127.0.0.1",
-				"ctxclient": "127.0.0.1",
-			},
-		},
-		{
-			name: "apachethrift",
-			params: params{
-				"apachethriftserver": "127.0.0.1",
-				"apachethriftclient": "127.0.0.1",
-			},
-		},
+		// 	axes: axes{"transport": []string{"http", "tchannel"}},
+		// },
+		// {
+		// 	name: "json",
+		// 	axes: axes{"transport": []string{"http", "tchannel"}},
+		// },
+		// {
+		// 	name: "thrift",
+		// 	axes: axes{"transport": []string{"http", "tchannel"}},
+		// },
+		// {
+		// 	name: "errors_httpclient",
+		// },
+		// {
+		// 	name: "errors_tchclient",
+		// },
+		// {
+		// 	name: "headers",
+		// 	axes: axes{
+		// 		"transport": []string{"http", "tchannel"},
+		// 		"encoding":  []string{"raw", "json", "thrift"},
+		// 	},
+		// },
+		// {
+		// 	name: "tchclient",
+		// 	axes: axes{
+		// 		"encoding": []string{"raw", "json", "thrift"},
+		// 	},
+		// },
+		// {
+		// 	name: "tchserver",
+		// 	axes: axes{
+		// 		"encoding": []string{"raw", "json", "thrift"},
+		// 	},
+		// },
+		// {
+		// 	name: "httpserver",
+		// 	params: params{
+		// 		"httpserver": "127.0.0.1",
+		// 	},
+		// },
+		// {
+		// 	name: "thriftgauntlet",
+		// 	axes: axes{
+		// 		"transport": []string{"http", "tchannel"},
+		// 	},
+		// },
+		// {
+		// 	name: "timeout",
+		// 	axes: axes{
+		// 		"transport": []string{"http", "tchannel"},
+		// 	},
+		// },
+		// {
+		// 	name: "ctxpropagation",
+		// 	axes: axes{
+		// 		"transport": []string{"http", "tchannel"},
+		// 	},
+		// 	params: params{
+		// 		"ctxserver": "127.0.0.1",
+		// 		"ctxclient": "127.0.0.1",
+		// 	},
+		// },
+		// {
+		// 	name: "apachethrift",
+		// 	params: params{
+		// 		"apachethriftserver": "127.0.0.1",
+		// 		"apachethriftclient": "127.0.0.1",
+		// 	},
+		// },
 	}
 
 	for _, bb := range behaviors {

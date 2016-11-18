@@ -30,6 +30,7 @@ import (
 	"go.uber.org/yarpc/encoding/raw"
 	"go.uber.org/yarpc/transport"
 	"go.uber.org/yarpc/transport/http"
+	"go.uber.org/yarpc/transport/redis"
 )
 
 var dispatcher yarpc.Dispatcher
@@ -43,7 +44,9 @@ func Start() {
 	dispatcher = yarpc.NewDispatcher(yarpc.Config{
 		Name: "oneway-test",
 		Inbounds: []transport.Inbound{
-			http.NewInbound(":8084"),
+			// http.NewInbound(":8084"),
+			redis.NewInbound(redis.NewRedis5Server("localhost", 6379,
+				"yarpc/queue", "yarpc/queue/processing")),
 		},
 		Outbounds: yarpc.Outbounds{
 			"client": {Oneway: h.Outbound},
