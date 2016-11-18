@@ -22,32 +22,30 @@ package redis
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.uber.org/yarpc/transport"
 	tInternal "go.uber.org/yarpc/transport/internal"
 	"go.uber.org/yarpc/transport/redis/internal"
-	redis5 "gopkg.in/redis.v5"
 )
 
 type handler struct {
 	registry transport.Registry
 	deps     transport.Deps
 
-	client *redis5.Client
+	server QueueServer
 	stop   chan struct{}
 }
 
 func newHandler(
 	service transport.ServiceDetail,
 	deps transport.Deps,
-	client *redis5.Client,
+	server QueueServer,
 ) *handler {
 	return &handler{
 		registry: service.Registry,
 		deps:     deps,
-		client:   client,
+		server:   server,
 		stop:     make(chan struct{}),
 	}
 }
@@ -68,44 +66,29 @@ func (h *handler) start() {
 }
 
 func (h *handler) handle() {
-	cmd := h.client.BRPopLPush(queueKey, queueProcessingKey, time.Second)
-	if res, err := cmd.Result(); res == "" || err != nil {
-		return
-	}
-
-	item, err := cmd.Bytes()
-	if err != redis5.Nil && err != nil {
-		fmt.Println(err, "one")
+	item, err := h.server.BRPopLPush(time.Second)
+	if err != nil {
 		return
 	}
 
 	req, err := internal.UnmarshalRequest(item)
 	if err != nil {
-		fmt.Println(err, "two", item, cmd.String())
+		h.server.LRem(item)
 		return
 	}
 
 	ctx := context.Background()
 
 	spec, err := h.registry.Choose(ctx, req)
-	if err != nil || spec.Oneway() == nil {
-		fmt.Println(err, "three")
-		h.remove(item)
+	if err != nil || spec.Type() != transport.Oneway {
+		h.server.LRem(item)
 		return
 	}
 
-	err = tInternal.SafelyCallOnewayHandler(ctx, spec.Oneway(), req)
-	if err != nil {
-		fmt.Println(err, "four")
-	}
-	h.remove(item)
+	tInternal.SafelyCallOnewayHandler(ctx, spec.Oneway(), req)
+	h.server.LRem(item)
 }
 
-func (h *handler) remove(item []byte) {
-	h.client.LRem(queueProcessingKey, 1, item)
-}
-
-func (h *handler) Stop() error {
+func (h *handler) Stop() {
 	h.stop <- struct{}{}
-	return h.client.Close()
 }

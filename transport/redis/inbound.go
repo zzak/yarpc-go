@@ -23,31 +23,27 @@ package redis
 import "go.uber.org/yarpc/transport"
 
 type inbound struct {
-	host string
-	port int
-
+	server  QueueServer
 	handler *handler
 }
 
 //NewInbound creates a redis transport.Inbound
-func NewInbound(host string, port int) transport.Inbound {
-	return &inbound{
-		host: host,
-		port: port,
-	}
+func NewInbound(server QueueServer) transport.Inbound {
+	return &inbound{server: server}
 }
 
 func (i *inbound) Start(service transport.ServiceDetail, deps transport.Deps) error {
-	client, err := NewRedis5Client(i.host, i.port)
+	err := i.server.Start()
 	if err != nil {
 		return err
 	}
 
-	i.handler = newHandler(service, deps, client)
+	i.handler = newHandler(service, deps, i.server)
 	i.handler.StartBackground()
 	return nil
 }
 
 func (i *inbound) Stop() error {
-	return i.handler.Stop()
+	i.handler.Stop()
+	return i.server.Stop()
 }

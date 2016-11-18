@@ -20,46 +20,27 @@
 
 package redis
 
-import (
-	"fmt"
+import "time"
 
-	redis5 "gopkg.in/redis.v5"
-)
-
-const (
-	queueKey           = "yarpc/queue"
-	queueProcessingKey = "yarpc/queue/processing"
-)
-
-// QueueClient ...
+// QueueClient adds items to the queue
 type QueueClient interface {
 	Start() error
 	Stop() error
 
-	LPush() error
-	QueueKey() string
+	// LPush adds item to the queue
+	LPush(item []byte) error
 }
 
-// QueueServer ...
+// QueueServer removes items from the queue
 type QueueServer interface {
 	Start() error
 	Stop() error
 
-	BRPopLPush()
-	// Remove
-	LRem(key string)
-}
+	// BRPopLPush moves an item from the primary queue into a processing list.
+	// This MUST return an error if the blocking call does not receive and item
+	//  within the timeout.
+	BRPopLPush(timeout time.Duration) ([]byte, error)
 
-type redis5Client struct {
-	client *redis5.Client
-}
-
-func NewRedis5Client(host string, port int) (*redis5.Client, error) {
-	c := redis5.NewClient(&redis5.Options{
-		Addr: fmt.Sprintf("%s:%d", host, port),
-		DB:   0,
-	})
-
-	err := c.Ping().Err()
-	return c, err
+	// LRem must remove at most one item from the processing list
+	LRem(item []byte) error
 }

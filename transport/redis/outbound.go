@@ -26,37 +26,26 @@ import (
 
 	"go.uber.org/yarpc/transport"
 	"go.uber.org/yarpc/transport/redis/internal"
-	"gopkg.in/redis.v5"
 )
 
 type outbound struct {
 	host string
 	port int
 
-	client *redis.Client
+	client QueueClient
 }
 
-// NewOutbound creates a redis transport.OnewayOutbound
-func NewOutbound(host string, port int) transport.OnewayOutbound {
-	return &outbound{
-		host: host,
-		port: port,
-	}
+// NewOnewayOutbound creates a redis transport.OnewayOutbound
+func NewOnewayOutbound(client QueueClient) transport.OnewayOutbound {
+	return &outbound{client: client}
 }
 
 func (o *outbound) Start(deps transport.Deps) error {
-	client, err := NewRedis5Client(o.host, o.port)
-	if err != nil {
-		return err
-	}
-
-	o.client = client
-	_, err = o.client.Ping().Result()
-	return err
+	return o.client.Start()
 }
 
 func (o *outbound) Stop() error {
-	return o.client.Close()
+	return o.client.Stop()
 }
 
 type ack time.Time
@@ -71,11 +60,12 @@ func (o *outbound) CallOneway(ctx context.Context, req *transport.Request) (tran
 		return nil, err
 	}
 
-	cmd := o.client.LPush(queueKey, marshalledReq)
-	if cmd.Err() != nil {
-		return nil, cmd.Err()
+	err = o.client.LPush(marshalledReq)
+	ack := time.Now()
+
+	if err != nil {
+		return nil, err
 	}
 
-	ack := time.Now()
 	return ack, nil
 }
