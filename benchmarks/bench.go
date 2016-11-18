@@ -169,27 +169,38 @@ func benchMain() {
 		if err != nil {
 			panic(err)
 		}
-		cfg := benchConfig{
-			client:       c["client"],
-			server:       c["server"],
+
+		serverConfig := serverConfig{
+			impl:         c["server"],
 			transport:    c["transport"],
 			encoding:     c["encoding"],
 			payloadBytes: payloadBytes,
 		}
+		server := newLocalServer(serverConfig)
 
-		server := newLocalServer(cfg)
 		endpoint, err := server.Start()
 		if err != nil {
 			panic(err)
 		}
+		log.Printf("server endpoint: %q", endpoint)
 
-		client := newLocalClient(cfg, endpoint)
+		clientConfig := clientConfig{
+			impl:         c["client"],
+			transport:    c["transport"],
+			encoding:     c["encoding"],
+			payloadBytes: payloadBytes,
+			endpoint:     endpoint,
+		}
+		client := newLocalClient(clientConfig)
+
 		err = client.Start()
 		if err != nil {
 			panic(err)
 		}
 
+		log.Print("warmup")
 		client.Warmup()
+		log.Print("benchmark")
 		result := testing.Benchmark(client.RunBenchmark)
 		log.Printf("%s", result)
 		results = append(results, result)
