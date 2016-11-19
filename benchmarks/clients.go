@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
+	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -47,6 +51,22 @@ type yarpcClientDispatcher struct {
 }
 
 func newLocalClient(cfg clientConfig) localClient {
+	if cfg.impl == "yarpc" {
+		return newLocalYarpcClient(cfg)
+	}
+
+	switch cfg.transport {
+	case "http":
+		return newLocalHTTPClient(cfg)
+	case "tchannel":
+		return newLocalTChannelClient(cfg)
+	default:
+		log.Panicf("unknown transport %s", cfg.transport)
+		return nil
+	}
+}
+
+func newLocalYarpcClient(cfg clientConfig) localClient {
 	var outbound transport.UnaryOutbound
 
 	switch cfg.transport {
@@ -113,4 +133,83 @@ func (c *yarpcRawClient) RunBenchmark(b *testing.B) {
 			panic(err)
 		}
 	}
+}
+
+type httpRawClient struct {
+	transport *http.Transport
+	client    http.Client
+	url       string
+	reqBody   []byte
+}
+
+func newLocalHTTPClient(cfg clientConfig) localClient {
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	reqBody := make([]byte, cfg.payloadBytes)
+	rand.Read(reqBody)
+
+	return &httpRawClient{
+		transport: transport,
+		client: http.Client{
+			Transport: transport,
+		},
+		url:     "http://" + cfg.endpoint,
+		reqBody: reqBody,
+	}
+}
+
+func (c *httpRawClient) Start() error {
+	return nil
+}
+
+func (c *httpRawClient) Stop() error {
+	c.transport.CloseIdleConnections()
+	return nil
+}
+
+func (c *httpRawClient) Warmup() {
+	b := testing.B{N: 10}
+	c.RunBenchmark(&b)
+}
+
+func (c *httpRawClient) RunBenchmark(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		req, err := http.NewRequest("POST", c.url, bytes.NewReader(c.reqBody))
+		if err != nil {
+			panic(err)
+		}
+		req = req.WithContext(ctx)
+		req.Header = http.Header{
+			"Context-TTL-MS": {"100"},
+			"Rpc-Caller":     {"bench_client"},
+			"Rpc-Encoding":   {"raw"},
+			"Rpc-Procedure":  {"echo"},
+			"Rpc-Service":    {"bench_server"},
+		}
+		res, err := c.client.Do(req)
+		if err != nil {
+			panic(err)
+		}
+		if _, err := ioutil.ReadAll(res.Body); err != nil {
+			panic(err)
+		}
+		if err := res.Body.Close(); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func newLocalTChannelClient(cfg clientConfig) localClient {
+	log.Panicf("not implemented")
+	return nil
 }

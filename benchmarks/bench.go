@@ -14,8 +14,8 @@ import (
 
 var allAxes = map[string][]string{
 	"transports": {"tchannel", "http"},
-	"clients":    {"yarpc", "direct"},
-	"servers":    {"yarpc", "direct"},
+	"clients":    {"yarpc", "native"},
+	"servers":    {"yarpc", "native"},
 	"encodings":  {"raw", "json", "thrift"},
 	"payloads":   {"16b", "64b", "512b", "1kb", "4kb", "64kb"},
 }
@@ -106,6 +106,18 @@ func main() {
 	}
 }
 
+type benchResult struct {
+	testing.BenchmarkResult
+
+	transport string
+	client    string
+	server    string
+	encoding  string
+	payload   string
+}
+
+type benchResults []benchResult
+
 func benchMain() {
 	fmt.Println("Running benchmarks for:")
 	axes := map[string][]string{
@@ -123,7 +135,7 @@ func benchMain() {
 		fmt.Fprintln(w, "Transports\t:", flagTransports)
 		fmt.Fprintln(w, "Clients\t:", flagClients)
 		fmt.Fprintln(w, "Servers\t:", flagServers)
-		fmt.Fprintln(w, "Encodingss\t:", flagEncodings)
+		fmt.Fprintln(w, "Encodings\t:", flagEncodings)
 		fmt.Fprintln(w, "Payloads\t:", flagPayloads)
 		fmt.Fprintln(w, "\t")
 		fmt.Fprintln(w, "Combinations\t:", len(combinations), "benchmark(s) to run")
@@ -144,7 +156,7 @@ func benchMain() {
 		w.Flush()
 	}
 
-	var results []testing.BenchmarkResult
+	var results benchResults
 	for i, c := range combinations {
 		msg := fmt.Sprintf("%d/%d (%d%%)", i+1, len(combinations),
 			(i+1)*100/len(combinations))
@@ -201,10 +213,110 @@ func benchMain() {
 		log.Print("warmup")
 		client.Warmup()
 		log.Print("benchmark")
-		result := testing.Benchmark(client.RunBenchmark)
+		result := benchResult{
+			BenchmarkResult: testing.Benchmark(client.RunBenchmark),
+
+			transport: c["transport"],
+			client:    c["client"],
+			server:    c["server"],
+			encoding:  c["encoding"],
+			payload:   c["payload"],
+		}
 		log.Printf("%s", result)
 		results = append(results, result)
 	}
+	resultsReport(results)
+}
+
+func (rs benchResults) forKey(f func(benchResult) string) []string {
+	ss := stringSet{}
+	for _, r := range rs {
+		ss[f(r)] = struct{}{}
+	}
+	return ss.Keys()
+}
+
+func (rs benchResults) filtered(f func(benchResult) bool) benchResults {
+	var filtered benchResults
+	for _, r := range rs {
+		if f(r) {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
+}
+
+func (rs benchResults) Transports() []string {
+	return rs.forKey(func(r benchResult) string { return r.transport })
+}
+
+func (rs benchResults) ByTransport(t string) benchResults {
+	return rs.filtered(func(r benchResult) bool {
+		return r.transport == t
+	})
+}
+
+func (rs benchResults) Encodings() []string {
+	return rs.forKey(func(r benchResult) string { return r.encoding })
+}
+
+func (rs benchResults) ByEncodings(e string) benchResults {
+	return rs.filtered(func(r benchResult) bool {
+		return r.encoding == e
+	})
+}
+
+func (rs benchResults) Payloads() []string {
+	return rs.forKey(func(r benchResult) string { return r.payload })
+}
+
+func (rs benchResults) ByPayload(p string) benchResults {
+	return rs.filtered(func(r benchResult) bool {
+		return r.payload == p
+	})
+}
+
+func (rs benchResults) ByImpl(client, server string) benchResults {
+	return rs.filtered(func(r benchResult) bool {
+		return r.client == client && r.server == server
+	})
+}
+
+func resultsReport(results benchResults) {
+	fmt.Println("\nResults:")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.AlignRight)
+	for _, transport := range results.Transports() {
+		results := results.ByTransport(transport)
+		fmt.Fprintf(w, " - Transport: %s\n", transport)
+		for _, encoding := range results.Encodings() {
+			results := results.ByEncodings(encoding)
+			fmt.Fprintf(w, "   - Encoding: %s\n", encoding)
+			for _, payload := range results.Payloads() {
+				fmt.Fprintf(w, "     - Payload: %s\n", payload)
+				results := results.ByPayload(payload)
+				references := results.ByImpl("native", "native")
+				var reference *benchResult
+				if len(references) == 1 {
+					reference = &references[0]
+				}
+				if reference != nil {
+					fmt.Fprintf(w, "      Client|\tServer |\tns/call |\t overhead\n")
+					fmt.Fprintf(w, "      ------|\t------ |\t------- |\t --------\n")
+					for _, r := range results {
+						fmt.Fprintf(w, "%s |\t%s |\t%d |\t %d\n", r.client,
+							r.server, r.NsPerOp(), r.NsPerOp()-reference.NsPerOp())
+					}
+				} else {
+					fmt.Fprintf(w, "      Client|\tServer |\t ns/call\n")
+					fmt.Fprintf(w, "      ------|\t------ |\t -------\n")
+					for _, r := range results {
+						fmt.Fprintf(w, "%s |\t%s |\t %d\n", r.client, r.server, r.NsPerOp())
+					}
+				}
+			}
+		}
+	}
+	w.Flush()
 }
 
 func spawnPeer() {

@@ -2,9 +2,14 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
+	"net"
+	"net/http"
+	"testing"
 
 	tchannel "github.com/uber/tchannel-go"
+	traw "github.com/uber/tchannel-go/raw"
 
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/raw"
@@ -35,6 +40,29 @@ type localServer interface {
 
 func yarpcEcho(ctx context.Context, reqMeta yarpc.ReqMeta, body []byte) ([]byte, yarpc.ResMeta, error) {
 	return body, yarpc.NewResMeta().Headers(reqMeta.Headers()), nil
+}
+
+func httpEcho(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	hs := w.Header()
+	for k, vs := range r.Header {
+		hs[k] = vs
+	}
+
+	_, err := io.Copy(w, r.Body)
+	if err != nil {
+		panic(err)
+	}
+}
+
+type tchannelEcho struct{ t testing.TB }
+
+func (tchannelEcho) Handle(ctx context.Context, args *traw.Args) (*traw.Res, error) {
+	return &traw.Res{Arg2: args.Arg2, Arg3: args.Arg3}, nil
+}
+
+func (t tchannelEcho) OnError(ctx context.Context, err error) {
+	t.t.Fatalf("request failed: %v", err)
 }
 
 func newLocalServer(cfg serverConfig) localServer {
@@ -97,7 +125,7 @@ func newLocalYarpcTChannelServer(cfg serverConfig) localServer {
 	if err != nil {
 		panic(err)
 	}
-	tchInboud := ytch.NewInbound(tch)
+	tchInboud := ytch.NewInbound(tch, ytch.ListenAddr("localhost:0"))
 	yarpcConfig := yarpc.Config{
 		Name:     "bench_server",
 		Inbounds: []transport.Inbound{tchInboud},
@@ -126,7 +154,35 @@ func newLocalTChannelServer(cfg serverConfig) localServer {
 	return nil
 }
 
+type httpServer struct {
+	l    net.Listener
+	done <-chan struct{}
+}
+
 func newLocalHTTPServer(cfg serverConfig) localServer {
-	log.Panicf("not implemented")
-	return nil
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	return &httpServer{
+		l: l,
+	}
+}
+
+func (s *httpServer) Start() (string, error) {
+	done := make(chan struct{})
+	s.done = done
+	go func() {
+		if err := http.Serve(s.l, http.HandlerFunc(httpEcho)); err != nil {
+			panic(err)
+		}
+		close(done)
+	}()
+	return s.l.Addr().String(), nil
+}
+
+func (s *httpServer) Stop() error {
+	err := s.l.Close()
+	<-s.done
+	return err
 }
