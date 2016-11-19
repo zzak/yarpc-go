@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -49,8 +49,11 @@ func httpEcho(w http.ResponseWriter, r *http.Request) {
 		hs[k] = vs
 	}
 
-	_, err := io.Copy(w, r.Body)
+	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		panic(err)
+	}
+	if _, err = w.Write(buf); err != nil {
 		panic(err)
 	}
 }
