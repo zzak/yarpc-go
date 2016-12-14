@@ -61,9 +61,9 @@ func (_mr *_MockRouterRecorder) Choose(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Choose", arg0, arg1)
 }
 
-func (_m *MockRouter) Procedures() []transport.Procedure {
-	ret := _m.ctrl.Call(_m, "Procedures")
-	ret0, _ := ret[0].([]transport.Procedure)
+func (_m *MockRegistry) ServiceProcedures() []transport.ServiceProcedure {
+	ret := _m.ctrl.Call(_m, "ServiceProcedures")
+	ret0, _ := ret[0].([]transport.ServiceProcedure)
 	return ret0
 }
 
@@ -113,8 +113,10 @@ func (_mr *_MockRouteTableRecorder) Procedures() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Procedures")
 }
 
-func (_m *MockRouteTable) Register(_param0 []transport.Procedure) {
-	_m.ctrl.Call(_m, "Register", _param0)
+func (_m *MockRegistrar) ServiceProcedures() []transport.RegisteredProcedure {
+	ret := _m.ctrl.Call(_m, "ServiceProcedures")
+	ret0, _ := ret[0].([]transport.RegisteredProcedure)
+	return ret0
 }
 
 func (_mr *_MockRouteTableRecorder) Register(arg0 interface{}) *gomock.Call {
