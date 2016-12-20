@@ -27,9 +27,15 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/internal/encoding"
 	"go.uber.org/yarpc/internal/errors"
+	"go.uber.org/yarpc/internal/introspection"
 
 	"github.com/uber/tchannel-go"
 	"go.uber.org/yarpc/internal/sync"
+)
+
+var (
+	_ transport.UnaryOutbound              = (*ChannelOutbound)(nil)
+	_ introspection.IntrospectableOutbound = (*ChannelOutbound)(nil)
 )
 
 // NewOutbound builds a new TChannel outbound using the transport's shared
@@ -171,6 +177,19 @@ func (o *ChannelOutbound) Call(ctx context.Context, req *transport.Request) (*tr
 	}
 
 	return &transport.Response{Headers: headers, Body: resBody}, nil
+}
+
+// Introspect returns basic status about this outbound.
+func (o *ChannelOutbound) Introspect() introspection.OutboundStatus {
+	state := "Stopped"
+	if o.started.Load() {
+		state = "Started"
+	}
+	return introspection.OutboundStatus{
+		Transport: "tchannel",
+		Endpoint:  o.addr,
+		State:     state,
+	}
 }
 
 func writeBody(body io.Reader, call *tchannel.OutboundCall) error {
