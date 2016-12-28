@@ -23,6 +23,7 @@ package main
 import (
 	"context"
 	"fmt"
+	gohttp "net/http"
 	"sync"
 
 	"go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/kv"
@@ -58,6 +59,8 @@ func (h *handler) SetValue(ctx context.Context, key *string, value *string) erro
 }
 
 func main() {
+	go func() { gohttp.ListenAndServe(":3242", nil) }()
+
 	tchannelTransport := tchannel.NewChannelTransport(
 		tchannel.ServiceName("keyvalue"),
 		tchannel.ListenAddr(":28941"),
