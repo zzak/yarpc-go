@@ -35,3 +35,10 @@ type Transport interface {
 	// Unallocate a peer from the Subscriber
 	ReleasePeer(Identifier, Subscriber) error
 }
+
+type noSubscriber struct{}
+
+func (noSubscriber) NotifyStatusChanged(Identifier) {}
+
+// NoSubscriber is a nil subscriber that ignores status changed events.
+var NoSubscriber = noSubscriber{}
