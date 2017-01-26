@@ -50,6 +50,7 @@ type Peer struct {
 
 	transport        peer.Transport
 	subscribers      map[peer.Subscriber]struct{}
+	subscriptions    int
 	pending          atomic.Int32
 	connectionStatus peer.ConnectionStatus
 }
@@ -69,6 +70,7 @@ func (p *Peer) Transport() peer.Transport {
 // This function isn't thread safe
 func (p *Peer) Subscribe(sub peer.Subscriber) {
 	p.subscribers[sub] = struct{}{}
+	p.subscriptions++
 }
 
 // Unsubscribe removes a subscriber from the peer's subscriber map
@@ -82,6 +84,7 @@ func (p *Peer) Unsubscribe(sub peer.Subscriber) error {
 	}
 
 	delete(p.subscribers, sub)
+	p.subscriptions--
 	return nil
 }
 
@@ -118,6 +121,9 @@ func (p *Peer) EndRequest() {
 }
 
 func (p *Peer) notifyStatusChanged() {
+	if p.subscriptions < 2 {
+		return
+	}
 	for sub := range p.subscribers {
 		sub.NotifyStatusChanged(p)
 	}
