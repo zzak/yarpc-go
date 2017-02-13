@@ -112,3 +112,14 @@ func (pl *Circus) releaseNode(index int) error {
 	pl.push(index, freeHeadIndex)
 	return nil
 }
+
+func (pl *Circus) walk(headIndex int, f func(int, *node)) {
+	head := &pl.nodes[headIndex]
+	index := head.nextIndex
+	node := &pl.nodes[index]
+	for node != head {
+		f(index, node)
+		index = node.nextIndex
+		node = &pl.nodes[index]
+	}
+}

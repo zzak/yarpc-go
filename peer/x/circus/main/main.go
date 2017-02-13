@@ -53,6 +53,7 @@ func main() {
 	// pl := roundrobin.New(x)
 	pl := circus.New(x)
 	// pl.Monitor = &Monitor{}
+	pl.Dump()
 
 	pl.Start()
 	defer pl.Stop()
@@ -61,12 +62,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	peertest.GenerateLoad(ctx, pl)
-	peertest.GenerateChaos(ctx, pl)
+	peertest.GenerateLoad(ctx, pl, 256)
+	peertest.GenerateChaos(ctx, pl, 256)
 
 	time.Sleep(10 * time.Millisecond)
 
-	for n := 0; n < 30; n++ {
+	for n := 0; n < 300; n++ {
+
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 		peer, finish, err := pl.Choose(ctx, nil)
@@ -74,7 +76,12 @@ func main() {
 			log.Fatalln(err)
 		}
 		fmt.Println(peer.Identifier())
+		pl.Dump()
 		finish(nil)
 		time.Sleep(500 * time.Nanosecond)
+
+		pl.Dump()
 	}
+
+	pl.Dump()
 }

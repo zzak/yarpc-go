@@ -10,14 +10,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-func GenerateLoad(ctx context.Context, pc peer.Chooser) {
-	for n := 0; n < 100; n++ {
+func GenerateLoad(ctx context.Context, pc peer.Chooser, count int) {
+	for n := 0; n < count; n++ {
 		go worker(ctx, pc, false)
 	}
 }
 
-func GenerateLoadLoud(ctx context.Context, pc peer.Chooser) {
-	for n := 0; n < 100; n++ {
+func GenerateLoadLoud(ctx context.Context, pc peer.Chooser, count int) {
+	for n := 0; n < count; n++ {
 		go worker(ctx, pc, true)
 	}
 }
@@ -36,10 +36,10 @@ func worker(ctx context.Context, pc peer.Chooser, loud bool) {
 	}
 }
 
-func GenerateChaos(ctx context.Context, pl peer.List) {
+func GenerateChaos(ctx context.Context, pl peer.List, size int) {
 	// Populate the peer chooser with peer identifiers.
-	cluster := make([]peer.Identifier, 0, 256)
-	for n := 0; n < 256; n++ {
+	cluster := make([]peer.Identifier, 0, size)
+	for n := 0; n < size; n++ {
 		pid := hostport.PeerIdentifier(fmt.Sprintf("127.0.0.%d", n))
 		cluster = append(cluster, pid)
 	}

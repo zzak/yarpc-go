@@ -245,10 +245,16 @@ func (pl *Circus) Choose(ctx context.Context, _ *transport.Request) (peer.Peer, 
 			// for multiple subscribers.  We must warn the others.
 			pl.notifyPeerAvailable()
 
-			node := pl.getLeastPendingNode()
+			index, node := pl.getLeastPendingNode()
+			peer := node.peer
+			finish := node.subscriber.boundFinish
+			pending := node.pending
+			// TODO adjust pending ring (instead of pop/push)
+			pl.popFromCircus(index)
+			pl.pushToCircus(index, pending+1)
 			pl.Unlock()
-			node.peer.StartRequest()
-			return node.peer, node.subscriber.boundFinish, nil
+			peer.StartRequest()
+			return peer, finish, nil
 		}
 		pl.Unlock()
 
@@ -264,34 +270,43 @@ func (pl *Circus) Choose(ctx context.Context, _ *transport.Request) (peer.Peer, 
 	}
 }
 
-func (pl *Circus) dump() {
-	// TODO lol
-	// fmt.Printf("circus: unused:%d connecting:%d available:%d\n", pl.unused, pl.connecting, pl.available)
-	// fmt.Printf("rings:")
-	// for i, ring := range pl.rings {
-	// 	if i != 0 {
-	// 		fmt.Printf(",")
-	// 	}
-	// 	fmt.Printf(" {%d pending at %d}", ring.pending, ring.headIndex)
-	// }
-	// fmt.Printf("\n")
-	// for i, node := range pl.nodes {
-	// 	fmt.Printf("%d. %v", i, node)
-	// 	if i == freeHeadIndex {
-	// 		fmt.Printf(" (free)")
-	// 	} else if i == unusedHeadIndex {
-	// 		fmt.Printf(" (unused)")
-	// 	} else if i == connectingHeadIndex {
-	// 		fmt.Printf(" (connecting)")
-	// 	} else {
-	// 		for _, ring := range pl.rings {
-	// 			if i == ring.headIndex {
-	// 				fmt.Printf(" (%d pending)", ring.pending)
-	// 			}
-	// 		}
-	// 	}
-	// 	fmt.Printf("\n")
-	// }
+func (pl *Circus) Dump() {
+	pl.Lock()
+	defer pl.Unlock()
+
+	fmt.Printf("circus: unused:%d connecting:%d available:%d\n", pl.unused, pl.connecting, pl.available)
+	fmt.Printf("  rings:\n")
+	pl.walk(circusHeadIndex, func(index int, n *node) {
+		fmt.Printf("    %v pending @%v (@%v):", n.pending, index, n.ringIndex)
+		pl.walk(n.ringIndex, func(index int, m *node) {
+			if n.ringIndex != m.ringIndex {
+				fmt.Printf(" !!! in %v ring ", m.ringIndex)
+			}
+			if n.pending != m.pending {
+				fmt.Printf(" !!! %v pending", m.pending)
+			}
+			fmt.Printf(" %v @%v,", m.peer.Identifier(), index)
+		})
+		fmt.Printf("\n")
+	})
+
+	fmt.Printf("  connecting:")
+	pl.walk(connectingHeadIndex, func(index int, node *node) {
+		fmt.Printf(" @%v,", index)
+	})
+	fmt.Printf("\n")
+
+	fmt.Printf("  unused:")
+	pl.walk(unusedHeadIndex, func(index int, node *node) {
+		fmt.Printf(" @%v,", index)
+	})
+	fmt.Printf("\n")
+
+	fmt.Printf("  free: ")
+	pl.walk(freeHeadIndex, func(index int, node *node) {
+		fmt.Printf(" @%v,", index)
+	})
+	fmt.Printf("\n")
 }
 
 func (pl *Circus) satisfyGoal() {
@@ -334,9 +349,78 @@ func (pl *Circus) retainPeer() error {
 	return err
 }
 
-func (pl *Circus) getLeastPendingNode() *node {
+func (pl *Circus) createRingBefore(nextCircusIndex, pending int) (int, int) {
+	circusIndex := pl.retainNode()
+	ringHeadIndex := pl.retainNode()
+	pl.push(circusIndex, nextCircusIndex)
+	circus := &pl.nodes[circusIndex]
+	circus.pending = pending
+	ringHead := &pl.nodes[ringHeadIndex]
+	circus.ringIndex = ringHeadIndex
+	ringHead.ringIndex = circusIndex
+	fmt.Printf("create ring %d retains %d, %d\n", pending, circusIndex, ringHeadIndex)
+	return ringHeadIndex, circusIndex
+}
+
+func (pl *Circus) pushToRing(index, ringHeadIndex, pending int) {
+	node := &pl.nodes[index]
+	pl.push(index, ringHeadIndex)
+	node.ringIndex = ringHeadIndex
+	node.pending = pending
+}
+
+func (pl *Circus) popFromCircus(index int) {
+	if pl.alone(index) {
+		node := &pl.nodes[index]
+		circusNodeIndex := node.ringIndex
+		circusNode := &pl.nodes[circusNodeIndex]
+		ringHeadIndex := circusNode.ringIndex
+		ringHead := &pl.nodes[ringHeadIndex]
+		// Remove the node from its ring
+		pl.pop(index)
+		// Remove the ring from the circus
+		pl.pop(ringHeadIndex)
+		// Release the head node of the ring for reuse
+		ringHead.ringIndex = -1
+		pl.releaseNode(ringHeadIndex)
+		pl.releaseNode(circusNodeIndex)
+	} else {
+		pl.pop(index)
+	}
+}
+
+// TODO adjust circus
+
+func (pl *Circus) pushToCircus(index, pending int) {
 	circusHead := &pl.nodes[circusHeadIndex]
-	leastPendingCircusIndex := circusHead.prevIndex
+	if pl.empty(circusHeadIndex) {
+		// If there are no rings, create a ring for the node
+		ringHeadIndex, _ := pl.createRingBefore(circusHeadIndex, pending)
+		pl.pushToRing(index, ringHeadIndex, pending)
+		return
+	}
+	circusIndex := circusHead.nextIndex
+	for {
+		circus := &pl.nodes[circusIndex]
+		ringHeadIndex := circus.ringIndex
+		if circusIndex == circusHeadIndex || circus.pending > pending {
+			// Create a new circus ring before the next ring
+			ringHeadIndex, circusIndex = pl.createRingBefore(circusIndex, pending)
+		} else {
+		}
+		if (&pl.nodes[circusIndex]).pending == pending {
+			// fmt.Printf("Pending: %v, index %v, ring head index %v\n", pending, index, ringHeadIndex)
+			// Huzzah, we have found the right circus ring
+			pl.pushToRing(index, ringHeadIndex, pending)
+			return
+		}
+		circusIndex = circus.nextIndex
+	}
+}
+
+func (pl *Circus) getLeastPendingNode() (int, *node) {
+	circusHead := &pl.nodes[circusHeadIndex]
+	leastPendingCircusIndex := circusHead.nextIndex
 	leastPendingCircus := &pl.nodes[leastPendingCircusIndex]
 	headIndex := leastPendingCircus.ringIndex
 	head := &pl.nodes[headIndex]
@@ -344,7 +428,7 @@ func (pl *Circus) getLeastPendingNode() *node {
 	pl.pop(index)
 	// TODO promote the used node to the next pending ring instead of recycling
 	pl.push(index, headIndex)
-	return &pl.nodes[index]
+	return index, &pl.nodes[index]
 }
 
 // returns the index of the head node of the ring with the least pending requests.
@@ -352,16 +436,16 @@ func (pl *Circus) getLeastPendingRingHeadIndex(pending int) int {
 	circusHead := &pl.nodes[circusHeadIndex]
 	if pl.empty(circusHeadIndex) {
 		leastPendingCircusIndex := pl.retainNode()
+		ringHeadIndex := pl.retainNode()
 		pl.push(leastPendingCircusIndex, circusHeadIndex)
 		leastPendingCircus := &pl.nodes[leastPendingCircusIndex]
 		leastPendingCircus.pending = pending
-		ringHeadIndex := pl.retainNode()
 		ringHead := &pl.nodes[ringHeadIndex]
 		leastPendingCircus.ringIndex = ringHeadIndex
 		ringHead.ringIndex = leastPendingCircusIndex
 		return ringHeadIndex
 	}
-	leastPendingCircusIndex := circusHead.prevIndex
+	leastPendingCircusIndex := circusHead.nextIndex
 	leastPendingCircus := &pl.nodes[leastPendingCircusIndex]
 	return leastPendingCircus.ringIndex
 }
@@ -414,8 +498,7 @@ func (pl *Circus) notifyStatusChanged(index int) {
 		// Remove the node from the connecting peer list
 		pl.pop(index)
 		// Add to the least pending ring
-		pl.push(index, pl.getLeastPendingRingHeadIndex(status.PendingRequestCount))
-		// TODO search for the correct ring for the given pending request count
+		pl.pushToCircus(index, status.PendingRequestCount)
 
 		// Non-blocking notification to goroutines blocked on Choose that
 		// they may resume and check for an available peer.
@@ -456,17 +539,15 @@ func (pl *Circus) notifyStatusChanged(index int) {
 	// // TODO handle ConnectionFailed status (release and retain a different
 	// // peer)
 
-	// // If the peer is connected and available, consider adjusting its ring for
-	// // its current pending request count.
-	// if node.ringIndex != -1 {
-	// 	ring := pl.rings[node.ringIndex]
-	// 	if status.PendingRequestCount != ring.pending {
-	// 		if pl.Monitor != nil {
-	// 			fmt.Printf("adjusted pending request count\n")
-	// 		}
-	// 		pl.adjustRing(index, node.ringIndex, status.PendingRequestCount)
-	// 	}
-	// }
+	// If the peer is connected and available, consider adjusting its ring for
+	// its current pending request count.
+	if node.available() &&
+		status.ConnectionStatus == peer.Available &&
+		node.pending != status.PendingRequestCount {
+		fmt.Printf("adjust pending\n")
+		pl.pop(index)
+		pl.pushToCircus(index, status.PendingRequestCount)
+	}
 
 	// if pl.Monitor != nil {
 	// 	fmt.Printf("after\n")

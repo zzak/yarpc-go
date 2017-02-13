@@ -52,6 +52,9 @@ func (s *subscriber) finish(err error) {
 func (pl *Circus) finish(s *subscriber, index int, err error) {
 	node := pl.nodes[index]
 	peer := node.peer
-	// TODO adjust tier
+	// TODO decrement pending request count and adjust ring position (again, incrementally)
+	pending := node.pending
+	pl.popFromCircus(index)
+	pl.pushToCircus(index, pending-1)
 	peer.EndRequest()
 }
