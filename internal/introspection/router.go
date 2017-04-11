@@ -62,6 +62,7 @@ type IntrospectableHandlerSpec interface {
 
 type IDLTree struct {
 	FilePath   string
+	SHA1       string
 	Includes   []IDLTree
 	RawContent string
 }

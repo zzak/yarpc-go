@@ -67,6 +67,7 @@ func thriftModuleToIDLTree(m idlintrospection.ThriftModule) introspection.IDLTre
 	}
 	r := introspection.IDLTree{
 		FilePath:   m.FilePath,
+		SHA1:       m.SHA1,
 		Includes:   includes,
 		RawContent: m.Raw,
 	}
