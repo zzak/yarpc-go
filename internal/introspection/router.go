@@ -20,16 +20,15 @@
 
 package introspection
 
-import (
-	"go.uber.org/yarpc/api/transport"
-)
+import "go.uber.org/yarpc/api/transport"
 
 // Procedure represent a registered procedure on a dispatcher.
 type Procedure struct {
-	Name      string `json:"name"`
-	Encoding  string `json:"encoding"`
-	Signature string `json:"signature"`
-	RPCType   string `json:"rpcType"`
+	Name      string   `json:"name"`
+	Encoding  string   `json:"encoding"`
+	Signature string   `json:"signature"`
+	RPCType   string   `json:"rpcType"`
+	IDLTree   *IDLTree `json: "idlTree"`
 }
 
 // IntrospectProcedures is a convenience function that translate a slice of
@@ -38,12 +37,31 @@ type Procedure struct {
 func IntrospectProcedures(routerProcs []transport.Procedure) []Procedure {
 	procedures := make([]Procedure, 0, len(routerProcs))
 	for _, p := range routerProcs {
+		var spec interface{} = p.HandlerSpec.Unary()
+		if spec == nil {
+			spec = p.HandlerSpec.Oneway()
+		}
+		var IDLTree *IDLTree
+		if i, ok := spec.(IntrospectableHandlerSpec); ok {
+			IDLTree = i.IDLTree()
+		}
 		procedures = append(procedures, Procedure{
 			Name:      p.Name,
 			Encoding:  string(p.Encoding),
 			Signature: p.Signature,
 			RPCType:   p.HandlerSpec.Type().String(),
+			IDLTree:   IDLTree,
 		})
 	}
 	return procedures
+}
+
+type IntrospectableHandlerSpec interface {
+	IDLTree() *IDLTree
+}
+
+type IDLTree struct {
+	FilePath   string
+	Includes   []IDLTree
+	RawContent string
 }

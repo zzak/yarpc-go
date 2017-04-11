@@ -27,7 +27,9 @@ import (
 	encodingapi "go.uber.org/yarpc/api/encoding"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/internal/encoding"
+	"go.uber.org/yarpc/internal/introspection"
 
+	"go.uber.org/thriftrw/idlintrospection"
 	"go.uber.org/thriftrw/protocol"
 	"go.uber.org/thriftrw/wire"
 )
@@ -37,6 +39,7 @@ type thriftUnaryHandler struct {
 	UnaryHandler UnaryHandler
 	Protocol     protocol.Protocol
 	Enveloping   bool
+	ThriftModule idlintrospection.ThriftModule
 }
 
 // thriftOnewayHandler wraps a Thrift Handler into a transport.OnewayHandler
@@ -44,6 +47,30 @@ type thriftOnewayHandler struct {
 	OnewayHandler OnewayHandler
 	Protocol      protocol.Protocol
 	Enveloping    bool
+	ThriftModule  idlintrospection.ThriftModule
+}
+
+func (t thriftUnaryHandler) IDLTree() *introspection.IDLTree {
+	r := thriftModuleToIDLTree(t.ThriftModule)
+	return &r
+}
+
+func (t thriftOnewayHandler) IDLTree() *introspection.IDLTree {
+	r := thriftModuleToIDLTree(t.ThriftModule)
+	return &r
+}
+
+func thriftModuleToIDLTree(m idlintrospection.ThriftModule) introspection.IDLTree {
+	includes := make([]introspection.IDLTree, 0, len(m.Includes))
+	for _, i := range m.Includes {
+		includes = append(includes, thriftModuleToIDLTree(i))
+	}
+	r := introspection.IDLTree{
+		FilePath:   m.FilePath,
+		Includes:   includes,
+		RawContent: m.Raw,
+	}
+	return r
 }
 
 func (t thriftUnaryHandler) Handle(ctx context.Context, treq *transport.Request, rw transport.ResponseWriter) error {
