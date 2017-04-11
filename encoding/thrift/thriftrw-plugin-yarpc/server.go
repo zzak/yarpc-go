@@ -86,6 +86,10 @@ func New(impl Interface, opts ...<$thrift>.RegisterOption) []<$transport>.Proced
 				<end>
 				},
 				Signature: "<.Name>(<range $i, $v := .Arguments><if ne $i 0>, <end><.Name> <formatType .Type><end>)<if not .OneWay | and .ReturnType> (<formatType .ReturnType>)<end>",
+				Annotations: map[string]string { <range $k, $v := .Annotations>
+						"<$k>": "<$v>",
+					<end>
+				},
 				},
 		<end>},
 	}

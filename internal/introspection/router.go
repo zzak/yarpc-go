@@ -26,10 +26,11 @@ import (
 
 // Procedure represent a registered procedure on a dispatcher.
 type Procedure struct {
-	Name      string `json:"name"`
-	Encoding  string `json:"encoding"`
-	Signature string `json:"signature"`
-	RPCType   string `json:"rpcType"`
+	Name        string            `json:"name"`
+	Encoding    string            `json:"encoding"`
+	Signature   string            `json:"signature"`
+	RPCType     string            `json:"rpcType"`
+	Annotations map[string]string `json:"annotations"`
 }
 
 // IntrospectProcedures is a convenience function that translate a slice of
@@ -39,10 +40,11 @@ func IntrospectProcedures(routerProcs []transport.Procedure) []Procedure {
 	procedures := make([]Procedure, 0, len(routerProcs))
 	for _, p := range routerProcs {
 		procedures = append(procedures, Procedure{
-			Name:      p.Name,
-			Encoding:  string(p.Encoding),
-			Signature: p.Signature,
-			RPCType:   p.HandlerSpec.Type().String(),
+			Name:        p.Name,
+			Encoding:    string(p.Encoding),
+			Signature:   p.Signature,
+			RPCType:     p.HandlerSpec.Type().String(),
+			Annotations: p.Annotations,
 		})
 	}
 	return procedures

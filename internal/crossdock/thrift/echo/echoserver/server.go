@@ -59,6 +59,9 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Echo(Ping *echo.Ping) (*echo.Pong)",
 			},
+			Annotations: map[string]string{
+				"ttlms": "100",
+			},
 		},
 	}
 

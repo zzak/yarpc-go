@@ -46,6 +46,10 @@ type Procedure struct {
 	// Signature of the handler, for introspection. This should be a snippet of
 	// Go code representing the function definition.
 	Signature string
+
+	// Annotations associated to the procedure. Thrift annotations and some
+	// protobuf options would resurface here for example.
+	Annotations map[string]string
 }
 
 // MarshalLogObject implements zap.ObjectMarshaler.

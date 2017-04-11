@@ -59,6 +59,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Sink(Snk *sink.SinkRequest)",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

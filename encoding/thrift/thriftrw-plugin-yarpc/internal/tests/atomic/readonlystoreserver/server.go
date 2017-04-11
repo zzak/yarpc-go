@@ -42,6 +42,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Integer(Key *string) (int64)",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

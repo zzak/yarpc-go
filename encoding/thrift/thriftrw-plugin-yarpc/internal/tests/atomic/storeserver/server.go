@@ -53,6 +53,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "CompareAndSwap(Request *atomic.CompareAndSwap)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "forget",
@@ -63,6 +64,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Forget(Key *string)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "increment",
@@ -73,6 +75,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Increment(Key *string, Value *int64)",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

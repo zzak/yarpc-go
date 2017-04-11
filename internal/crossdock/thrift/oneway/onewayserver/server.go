@@ -59,6 +59,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "Echo(Token *string)",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

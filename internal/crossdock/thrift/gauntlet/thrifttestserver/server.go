@@ -164,6 +164,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestBinary(Thing []byte) ([]byte)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testByte",
@@ -174,6 +175,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestByte(Thing *int8) (int8)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testDouble",
@@ -184,6 +186,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestDouble(Thing *float64) (float64)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testEnum",
@@ -194,6 +197,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestEnum(Thing *gauntlet.Numberz) (gauntlet.Numberz)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testException",
@@ -204,6 +208,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestException(Arg *string)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testI32",
@@ -214,6 +219,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestI32(Thing *int32) (int32)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testI64",
@@ -224,6 +230,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestI64(Thing *int64) (int64)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testInsanity",
@@ -234,6 +241,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestInsanity(Argument *gauntlet.Insanity) (map[gauntlet.UserId]map[gauntlet.Numberz]*gauntlet.Insanity)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testList",
@@ -244,6 +252,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestList(Thing []int32) ([]int32)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testMap",
@@ -254,6 +263,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestMap(Thing map[int32]int32) (map[int32]int32)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testMapMap",
@@ -264,6 +274,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestMapMap(Hello *int32) (map[int32]map[int32]int32)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testMulti",
@@ -274,6 +285,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestMulti(Arg0 *int8, Arg1 *int32, Arg2 *int64, Arg3 map[int16]string, Arg4 *gauntlet.Numberz, Arg5 *gauntlet.UserId) (*gauntlet.Xtruct)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testMultiException",
@@ -284,6 +296,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestMultiException(Arg0 *string, Arg1 *string) (*gauntlet.Xtruct)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testNest",
@@ -294,6 +307,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestNest(Thing *gauntlet.Xtruct2) (*gauntlet.Xtruct2)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testOneway",
@@ -304,6 +318,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestOneway(SecondsToSleep *int32)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testSet",
@@ -314,6 +329,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestSet(Thing map[int32]struct{}) (map[int32]struct{})",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testString",
@@ -324,6 +340,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestString(Thing *string) (string)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testStringMap",
@@ -334,6 +351,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestStringMap(Thing map[string]string) (map[string]string)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testStruct",
@@ -344,6 +362,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestStruct(Thing *gauntlet.Xtruct) (*gauntlet.Xtruct)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testTypedef",
@@ -354,6 +373,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestTypedef(Thing *gauntlet.UserId) (gauntlet.UserId)",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "testVoid",
@@ -364,6 +384,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "TestVoid()",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

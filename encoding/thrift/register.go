@@ -65,6 +65,9 @@ type Method struct {
 	// Snippet of Go code representing the function definition of the handler.
 	// This is useful for introspection.
 	Signature string
+
+	// Thrift annotations on the method.
+	Annotations map[string]string
 }
 
 // Service is a generic Thrift service implementation.
@@ -114,6 +117,7 @@ func BuildProcedures(s Service, opts ...RegisterOption) []transport.Procedure {
 			HandlerSpec: spec,
 			Encoding:    Encoding,
 			Signature:   method.Signature,
+			Annotations: method.Annotations,
 		})
 	}
 	return rs

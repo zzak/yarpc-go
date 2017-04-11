@@ -6,5 +6,5 @@ exception ResourceDoesNotExist {
 service KeyValue {
     string getValue(1: string key)
         throws (1: ResourceDoesNotExist doesNotExist)
-    void setValue(1: string key, 2: string value)
+    void setValue(1: string key, 2: string value) (my.note="42")
 }

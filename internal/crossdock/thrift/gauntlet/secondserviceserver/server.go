@@ -63,6 +63,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "BlahBlah()",
 			},
+			Annotations: map[string]string{},
 
 			thrift.Method{
 				Name: "secondtestString",
@@ -73,6 +74,7 @@ func New(impl Interface, opts ...thrift.RegisterOption) []transport.Procedure {
 				},
 				Signature: "SecondtestString(Thing *string) (string)",
 			},
+			Annotations: map[string]string{},
 		},
 	}
 

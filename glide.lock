@@ -1,5 +1,5 @@
-hash: 93363688a2891b48e84373a81dba6e11b7211187ba809c7293162ce7484a8a01
-updated: 2017-03-31T17:39:52.568740104-07:00
+hash: 90c14ae30b7ef625e513b8d35aafa5cd05f138d45a48a4c67e05101e7a88dbb4
+updated: 2017-04-10T17:08:11.980703321-07:00
 imports:
 - name: github.com/apache/thrift
   version: b2a4d4ae21c789b689dd162deb819665567f481c
@@ -154,7 +154,7 @@ imports:
 - name: go.uber.org/multierr
   version: 737b41aa3bf31c25d11dc84d5275af6bfe2ef4d2
 - name: go.uber.org/thriftrw
-  version: 05f870b3c56597d180af568a6392209cc33269e2
+  version: bc2ca6054debb1dc25ebf4f9d5626ec9ac8e37ff
   subpackages:
   - envelope
   - internal
