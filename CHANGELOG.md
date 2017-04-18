@@ -14,6 +14,8 @@ v1.8.0 (unreleased)
     if the response body was empty.
 -   Adds support for the `UnrecognizedProcedureError` error and error checker,
     indicating that the router was unable to find a handler for the request.
+-   Adds support for unary relay router middleware, so unrecognized requests
+    can be forwarded to a unary outbound.
 
 
 v1.7.1 (2017-03-29)
