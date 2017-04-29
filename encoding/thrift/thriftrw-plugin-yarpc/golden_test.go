@@ -18,18 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main_test
+package main
 
 import (
 	"crypto/sha1"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -42,33 +43,82 @@ import (
 
 const _testPackage = "go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc/internal/tests"
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	// We put the current version of the plugin on the path first.
-	outputDir, err := ioutil.TempDir("", "current-thriftrw-plugin-yarpc")
+func serve() string {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		log.Fatalf("failed to create temporary directory: %v", err)
-	}
-	defer os.RemoveAll(outputDir)
-
-	path := os.Getenv("PATH")
-	if err := os.Setenv("PATH", fmt.Sprintf("%v:%v", outputDir, path)); err != nil {
-		log.Fatalf("failed to add %q to PATH: %v", outputDir, err)
+		panic(err)
 	}
 
-	cmd := exec.Command(
-		"go", "build", "-o", filepath.Join(outputDir, "thriftrw-plugin-yarpc"), ".")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("failed to build plugin: %v", err)
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				panic(err)
+			}
+
+			handle(conn)
+		}
+	}()
+
+	return ln.Addr().String()
+}
+
+func handle(conn net.Conn) {
+	defer conn.Close()
+
+	stdinR, stdinW, err := os.Pipe()
+	if err != nil {
+		panic(err)
 	}
 
-	os.Exit(m.Run())
+	stdoutR, stdoutW, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+
+	go io.Copy(conn, stdoutR)
+	go io.Copy(stdinW, conn)
+
+	os.Stdout = stdoutW
+	os.Stdin = stdinR
+	main()
+}
+
+func callback(addr string) string {
+	i := strings.LastIndexByte(addr, ':')
+	host := addr[:i]
+	port, err := strconv.ParseInt(addr[i+1:], 10, 32)
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf(`#!/bin/bash -e
+
+nc %v %v
+`, host, port)
 }
 
 func TestCodeIsUpToDate(t *testing.T) {
+	{
+		outputDir, err := ioutil.TempDir("", "current-thriftrw-plugin-yarpc")
+		if err != nil {
+			log.Fatalf("failed to create temporary directory: %v", err)
+		}
+		defer os.RemoveAll(outputDir)
+
+		path := os.Getenv("PATH")
+		if err := os.Setenv("PATH", fmt.Sprintf("%v:%v", outputDir, path)); err != nil {
+			log.Fatalf("failed to add %q to PATH: %v", outputDir, err)
+		}
+
+		err = ioutil.WriteFile(
+			filepath.Join(outputDir, "thriftrw-plugin-yarpc"),
+			[]byte(callback(serve())),
+			0777,
+		)
+		require.NoError(t, err, "failed to create thriftrw plugin script")
+	}
+
 	thriftRoot, err := filepath.Abs("internal/tests")
 	require.NoError(t, err, "could not resolve absolute path to internal/tests")
 
