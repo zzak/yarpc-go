@@ -34,6 +34,8 @@ import (
 	"strings"
 	"testing"
 
+	"go.uber.org/thriftrw/plugin"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,22 +68,12 @@ func serve() string {
 func handle(conn net.Conn) {
 	defer conn.Close()
 
-	stdinR, stdinW, err := os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-
-	stdoutR, stdoutW, err := os.Pipe()
-	if err != nil {
-		panic(err)
-	}
-
-	go io.Copy(conn, stdoutR)
-	go io.Copy(stdinW, conn)
-
-	os.Stdout = stdoutW
-	os.Stdin = stdinR
-	main()
+	plugin.Main(&plugin.Plugin{
+		Name:             "yarpc",
+		ServiceGenerator: g{},
+		Reader:           conn,
+		Writer:           conn,
+	})
 }
 
 func callback(addr string) string {
