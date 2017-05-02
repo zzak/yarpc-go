@@ -31,14 +31,18 @@ if [[ -d "$COVER" ]]; then
 fi
 mkdir -p "$COVER"
 
+ignorePkgs=""
+
 # If a package directory has a .nocover file, don't count it when calculating
 # coverage.
 filter=""
 for pkg in "$@"; do
 	if [[ -f "$GOPATH/src/$pkg/.nocover" ]]; then
 		if [[ -n "$filter" ]]; then
+			ignorePkgs="$ignorePkgs\|"
 			filter="$filter, "
 		fi
+		ignorePkgs="$ignorePkgs$pkg/"
 		filter="$filter\"$pkg\": true"
 	fi
 done
@@ -59,8 +63,9 @@ for pkg in "$@"; do
 	fi
 
 	coverpkg=$(go list -json "$pkg" | jq -r '
-		.Deps
+		.Deps + .TestImports + .XTestImports
 		| . + ["'"$pkg"'"]
+		| unique
 		| map
 			( select(startswith("'"$ROOT_PKG"'"))
 			| select(contains("/vendor/") | not)
@@ -74,11 +79,21 @@ for pkg in "$@"; do
 
 	args=""
 	if [[ -n "$coverpkg" ]]; then
-		args="-coverprofile $COVER/cover.${i}.out -coverpkg $coverpkg"
+		args="-coverprofile $COVER/cover.${i}.out -covermode=atomic -coverpkg $coverpkg"
 	fi
 
-	do_waitpid go test -race $args "$pkg"
+	do_waitpid go test -race $args "$pkg" 2>&1 \
+		| grep -v 'warning: no packages being tested depend on'
 done
 reset_waitpids
 
-gocovmerge "$COVER"/*.out > cover.out
+# Merge cross-package coverage and then split the result into main and
+# experimental coverages.
+#
+# We ignore packages in the form "footest" and any mock files.
+gocovmerge "$COVER"/*.out \
+	| grep -v '/internal/examples/\|/internal/tests/\|/mocks/' \
+	| grep -v '/[a-z]\+test/' \
+	| grep -v "$ignorePkgs" \
+	| tee >(grep -v /x/ > coverage.main.txt) \
+	| (echo 'mode: atomic'; grep /x/) > coverage.x.txt

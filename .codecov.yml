@@ -1,0 +1,51 @@
+codecov:
+  branch: dev
+
+coverage:
+  range: 50...90
+
+  status:
+    project:
+      default: off
+      main:
+        target: 80%
+        flags: main
+      experimental:
+        target: 70%
+        flags: experimental
+    patch:
+      default: off
+      main:
+        target: 80%
+      experimental:
+        target: 70%
+
+ignore:
+  # All packages with .nocover files in them MUST be listed here
+ - /encoding/thrift/internal/
+ - /encoding/x/protobuf/internal/wirepb/
+ - /internal/crossdock/client/dispatcher/
+ - /internal/crossdock/crossdockpb/
+ - /internal/crossdock/thrift/
+ - /internal/crossdock/thrift/echo/
+ - /internal/crossdock/thrift/echo/echoclient/
+ - /internal/crossdock/thrift/echo/echoserver/
+ - /internal/crossdock/thrift/echo/yarpc/
+ - /internal/crossdock/thrift/gauntlet/
+ - /internal/crossdock/thrift/gauntlet/secondserviceclient/
+ - /internal/crossdock/thrift/gauntlet/secondserviceserver/
+ - /internal/crossdock/thrift/gauntlet/thrifttestclient/
+ - /internal/crossdock/thrift/gauntlet/thrifttestserver/
+ - /internal/crossdock/thrift/gauntlet/yarpc/
+ - /internal/crossdock/thrift/gen-go/
+ - /internal/crossdock/thrift/gen-go/echo/
+ - /internal/crossdock/thrift/gen-go/gauntlet_apache/
+ - /internal/crossdock/thrift/gen-go/gauntlet_tchannel/
+ - /internal/crossdock/thrift/oneway/
+ - /internal/crossdock/thrift/oneway/onewayclient/
+ - /internal/crossdock/thrift/oneway/onewayserver/
+ - /internal/crossdock/thrift/oneway/yarpc/
+ - /internal/examples/protobuf/examplepb/
+ - /internal/mapdecode/mapstructure/
+ - /internal/service-test/
+ - /yarpcproto/

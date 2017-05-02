@@ -48,6 +48,10 @@ staticcheck: deps ## check staticchck
 errcheck: deps ## check errcheck
 	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make errcheck
 
+.PHONY: verifycodecovignores
+verifycodecovignores: deps ## check verifycodecovignores
+	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make verifycodecovignores
+
 .PHONY: verifyversion
 verifyversion: deps ## verify the version in the changelog is the same as in version.go
 	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make verifyversion
@@ -64,9 +68,9 @@ test: deps ## run all tests
 cover: deps ## run all tests and output code coverage
 	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make cover
 
-.PHONY: goveralls
-goveralls: deps ## run code coverage and upload to coveralls
-	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make goveralls
+.PHONY: codecov
+codecov: deps ## run code coverage and upload to coveralls
+	PATH=$$PATH:$(BIN) docker run $(DOCKER_RUN_FLAGS) $(DOCKER_IMAGE) make codecov
 
 .PHONY: examples
 examples: deps ## run all examples tests

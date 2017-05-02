@@ -106,8 +106,19 @@ verifyversion: ## verify the version in the changelog is the same as in version.
 		exit 1; \
 	fi
 
+.PHONY: verifycodecovignores
+verifycodecovignores: ## verify that .codecov.yml contains all .nocover packages
+	@find . '(' -name vendor -o -name .glide ')' -prune -o -name .nocover -exec dirname '{}' ';' \
+		| cut -b2- \
+		| while read f; do \
+			if ! grep "$$f" .codecov.yml >/dev/null; then \
+				echo ".codecov.yml is out of date: add $$f to it"; \
+				exit 1; \
+			fi \
+		done
+
 .PHONY: lint
-lint: generatenodiff nogogenerate gofmt govet golint staticcheck errcheck verifyversion ## run all linters
+lint: generatenodiff nogogenerate gofmt govet golint staticcheck errcheck verifyversion verifycodecovignores ## run all linters
 
 .PHONY: test
 test: $(THRIFTRW) __eval_packages ## run all tests
@@ -116,11 +127,14 @@ test: $(THRIFTRW) __eval_packages ## run all tests
 .PHONY: cover
 cover: $(THRIFTRW) $(GOCOVMERGE) $(COVER) __eval_packages ## run all tests and output code coverage
 	PATH=$(BIN):$$PATH ./scripts/cover.sh $(PACKAGES)
-	go tool cover -html=cover.out -o cover.html
+	go tool cover -html=coverage.main.txt -o cover.main.html
+	go tool cover -html=coverage.x.txt -o cover.x.html
 
-.PHONY: goveralls
-goveralls: cover $(GOVERALLS) ## run code coverage and upload to coveralls
-	PATH=$(BIN):$$PATH goveralls -coverprofile=cover.out -service=travis-ci
+.PHONY: codecov
+codecov: SHELL := /bin/bash
+codecov: cover ## run code coverage and upload to codecov.io
+	bash <(curl -s https://codecov.io/bash) -c -f coverage.main.txt -F main
+	bash <(curl -s https://codecov.io/bash) -c -f coverage.x.txt -F experimental
 
 .PHONY: examples
 examples: ## run all examples tests
