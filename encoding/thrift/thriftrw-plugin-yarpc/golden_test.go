@@ -32,6 +32,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"go.uber.org/thriftrw/plugin"
@@ -68,12 +69,28 @@ func serve() string {
 func handle(conn net.Conn) {
 	defer conn.Close()
 
+	// The plugin expects to close both, the reader and the writer. net.Conn
+	// doesn't like Close being called multiple times so we're going to wrap
+	// it inside a sync.Once, ensuring it's called only once.
+	pluginConn := &closeOnce{Conn: conn}
 	plugin.Main(&plugin.Plugin{
 		Name:             "yarpc",
 		ServiceGenerator: g{},
-		Reader:           conn,
-		Writer:           conn,
+		Reader:           pluginConn,
+		Writer:           pluginConn,
 	})
+}
+
+type closeOnce struct {
+	net.Conn
+	once sync.Once
+}
+
+func (c *closeOnce) Close() (err error) {
+	c.once.Do(func() {
+		err = c.Conn.Close()
+	})
+	return
 }
 
 func callback(addr string) string {
