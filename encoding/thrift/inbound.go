@@ -29,8 +29,8 @@ import (
 	"go.uber.org/yarpc/internal/encoding"
 	"go.uber.org/yarpc/internal/introspection"
 
-	"go.uber.org/thriftrw/idlintrospection"
 	"go.uber.org/thriftrw/protocol"
+	"go.uber.org/thriftrw/thriftreflect"
 	"go.uber.org/thriftrw/wire"
 )
 
@@ -39,7 +39,7 @@ type thriftUnaryHandler struct {
 	UnaryHandler UnaryHandler
 	Protocol     protocol.Protocol
 	Enveloping   bool
-	ThriftModule idlintrospection.ThriftModule
+	ThriftModule *thriftreflect.ThriftModule
 }
 
 // thriftOnewayHandler wraps a Thrift Handler into a transport.OnewayHandler
@@ -47,7 +47,7 @@ type thriftOnewayHandler struct {
 	OnewayHandler OnewayHandler
 	Protocol      protocol.Protocol
 	Enveloping    bool
-	ThriftModule  idlintrospection.ThriftModule
+	ThriftModule  *thriftreflect.ThriftModule
 }
 
 func (t thriftUnaryHandler) IDLTree() *introspection.IDLTree {
@@ -60,7 +60,7 @@ func (t thriftOnewayHandler) IDLTree() *introspection.IDLTree {
 	return &r
 }
 
-func thriftModuleToIDLTree(m idlintrospection.ThriftModule) introspection.IDLTree {
+func thriftModuleToIDLTree(m *thriftreflect.ThriftModule) introspection.IDLTree {
 	includes := make([]introspection.IDLTree, 0, len(m.Includes))
 	for _, i := range m.Includes {
 		includes = append(includes, thriftModuleToIDLTree(i))

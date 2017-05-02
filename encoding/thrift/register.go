@@ -27,8 +27,8 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/internal/procedure"
 
-	"go.uber.org/thriftrw/idlintrospection"
 	"go.uber.org/thriftrw/protocol"
+	"go.uber.org/thriftrw/thriftreflect"
 	"go.uber.org/thriftrw/wire"
 )
 
@@ -67,7 +67,7 @@ type Method struct {
 	// This is useful for introspection.
 	Signature string
 
-	ThriftModule idlintrospection.ThriftModule
+	ThriftModule *thriftreflect.ThriftModule
 }
 
 // Service is a generic Thrift service implementation.
