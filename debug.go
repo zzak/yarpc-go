@@ -61,6 +61,7 @@ func init() {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		render(w, req)
 	})
+	http.HandleFunc("/debug/yarpc/idl/", renderIDLs)
 }
 
 func render(w io.Writer, req *http.Request) {
@@ -148,6 +149,7 @@ const pageHTML = `
 			<th>Encoding</th>
 			<th>Signature</th>
 			<th>RPC Type</th>
+			<th>IDL Entry point</th>
 		</tr>
 		{{range .Procedures}}
 		<tr>
@@ -155,6 +157,11 @@ const pageHTML = `
 			<td>{{.Encoding}}</td>
 			<td>{{.Signature}}</td>
 			<td>{{.RPCType}}</td>
+			<td>
+			{{ if .IDLEntryPoint }}
+				{{ .IDLEntryPoint.FilePath }}
+			{{ end }}
+			</td>
 		</tr>
 		{{end}}
 	</table>

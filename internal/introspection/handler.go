@@ -20,13 +20,10 @@
 
 package introspection
 
-// DispatcherStatus represent detailed introspection information about a
-// dispatcher.
-type DispatcherStatus struct {
-	Name            string           `json:"name"`
-	ID              string           `json:"id"`
-	Procedures      Procedures       `json:"procedures"`
-	Inbounds        []InboundStatus  `json:"inbounds"`
-	Outbounds       []OutboundStatus `json:"outbounds"`
-	PackageVersions []PackageVersion `json:"packageVersions"`
+type IntrospectableHandler interface {
+	Introspect() *Handler
+}
+
+type Handler struct {
+	IDLEntryPoint *IDLModule
 }

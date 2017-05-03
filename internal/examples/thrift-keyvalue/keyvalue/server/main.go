@@ -22,6 +22,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -127,5 +128,15 @@ func do() error {
 		return err
 	}
 
+	i := dispatcher.Introspect()
+	PrettyPrint(i)
+	PrettyPrint(i.Procedures.IDLModules())
+
 	select {} // block forever
+	return nil
+}
+
+func PrettyPrint(v interface{}) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	println(string(b))
 }

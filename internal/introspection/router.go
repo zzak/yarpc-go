@@ -20,49 +20,95 @@
 
 package introspection
 
-import "go.uber.org/yarpc/api/transport"
+import (
+	"go.uber.org/yarpc/api/transport"
+)
 
 // Procedure represent a registered procedure on a dispatcher.
 type Procedure struct {
-	Name      string   `json:"name"`
-	Encoding  string   `json:"encoding"`
-	Signature string   `json:"signature"`
-	RPCType   string   `json:"rpcType"`
-	IDLTree   *IDLTree `json: "idlTree"`
+	Name          string     `json:"name"`
+	Encoding      string     `json:"encoding"`
+	Signature     string     `json:"signature"`
+	RPCType       string     `json:"rpcType"`
+	IDLEntryPoint *IDLModule `json: "idlTree"`
 }
+
+// Procedures is a slice of Procedure.
+type Procedures []Procedure
 
 // IntrospectProcedures is a convenience function that translate a slice of
 // transport.Procedure to a slice of introspection.Procedure. This output is
 // used in debug and yarpcmeta.
-func IntrospectProcedures(routerProcs []transport.Procedure) []Procedure {
+func IntrospectProcedures(routerProcs []transport.Procedure) Procedures {
 	procedures := make([]Procedure, 0, len(routerProcs))
 	for _, p := range routerProcs {
-		var spec interface{} = p.HandlerSpec.Unary()
-		if spec == nil {
+		var spec interface{}
+		switch p.HandlerSpec.Type() {
+		case transport.Unary:
+			spec = p.HandlerSpec.Unary()
+		case transport.Oneway:
 			spec = p.HandlerSpec.Oneway()
 		}
-		var IDLTree *IDLTree
-		if i, ok := spec.(IntrospectableHandlerSpec); ok {
-			IDLTree = i.IDLTree()
+		var IDLEntryPoint *IDLModule
+		if spec != nil {
+			if i, ok := spec.(IntrospectableHandler); ok {
+				if i := i.Introspect(); i != nil {
+					IDLEntryPoint = i.IDLEntryPoint
+				}
+			}
 		}
 		procedures = append(procedures, Procedure{
-			Name:      p.Name,
-			Encoding:  string(p.Encoding),
-			Signature: p.Signature,
-			RPCType:   p.HandlerSpec.Type().String(),
-			IDLTree:   IDLTree,
+			Name:          p.Name,
+			Encoding:      string(p.Encoding),
+			Signature:     p.Signature,
+			RPCType:       p.HandlerSpec.Type().String(),
+			IDLEntryPoint: IDLEntryPoint,
 		})
 	}
 	return procedures
 }
 
-type IntrospectableHandlerSpec interface {
-	IDLTree() *IDLTree
-}
-
-type IDLTree struct {
+// IDLModule is a generic IDL module. For example, a thrift file or a protobuf
+// one.
+type IDLModule struct {
 	FilePath   string
 	SHA1       string
-	Includes   []IDLTree
+	Includes   []IDLModule
 	RawContent string
+}
+
+type IDLModules []IDLModule
+
+// IDLModules returns a flat map of all IDLModules used across all procedures.
+func (ps Procedures) IDLModules() IDLModules {
+	seen := make(map[string]struct{})
+	var r []IDLModule
+	var collect func(m IDLModule)
+	collect = func(m IDLModule) {
+		if _, ok := seen[m.FilePath]; !ok {
+			seen[m.FilePath] = struct{}{}
+			r = append(r, m)
+		}
+		for _, i := range m.Includes {
+			collect(i)
+		}
+	}
+	for _, p := range ps {
+		if p.IDLEntryPoint != nil {
+			collect(*p.IDLEntryPoint)
+		}
+	}
+	return r
+}
+
+func (ims IDLModules) Len() int {
+	return len(ims)
+}
+
+func (ims IDLModules) Less(i int, j int) bool {
+	return ims[i].FilePath < ims[j].FilePath
+}
+
+func (ims IDLModules) Swap(i int, j int) {
+	ims[i], ims[j] = ims[j], ims[i]
 }

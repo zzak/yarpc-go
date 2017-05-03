@@ -34,6 +34,9 @@ import (
 	"go.uber.org/thriftrw/wire"
 )
 
+var _ introspection.IntrospectableHandler = (*thriftUnaryHandler)(nil)
+var _ introspection.IntrospectableHandler = (*thriftOnewayHandler)(nil)
+
 // thriftUnaryHandler wraps a Thrift Handler into a transport.UnaryHandler
 type thriftUnaryHandler struct {
 	UnaryHandler UnaryHandler
@@ -50,22 +53,28 @@ type thriftOnewayHandler struct {
 	ThriftModule  *thriftreflect.ThriftModule
 }
 
-func (t thriftUnaryHandler) IDLTree() *introspection.IDLTree {
-	r := thriftModuleToIDLTree(t.ThriftModule)
-	return &r
-}
-
-func (t thriftOnewayHandler) IDLTree() *introspection.IDLTree {
-	r := thriftModuleToIDLTree(t.ThriftModule)
-	return &r
-}
-
-func thriftModuleToIDLTree(m *thriftreflect.ThriftModule) introspection.IDLTree {
-	includes := make([]introspection.IDLTree, 0, len(m.Includes))
-	for _, i := range m.Includes {
-		includes = append(includes, thriftModuleToIDLTree(i))
+func (t thriftUnaryHandler) Introspect() *introspection.Handler {
+	m := mapThriftModuleToIDLModule(t.ThriftModule)
+	r := introspection.Handler{
+		IDLEntryPoint: &m,
 	}
-	r := introspection.IDLTree{
+	return &r
+}
+
+func (t thriftOnewayHandler) Introspect() *introspection.Handler {
+	m := mapThriftModuleToIDLModule(t.ThriftModule)
+	r := introspection.Handler{
+		IDLEntryPoint: &m,
+	}
+	return &r
+}
+
+func mapThriftModuleToIDLModule(m *thriftreflect.ThriftModule) introspection.IDLModule {
+	includes := make([]introspection.IDLModule, 0, len(m.Includes))
+	for _, i := range m.Includes {
+		includes = append(includes, mapThriftModuleToIDLModule(i))
+	}
+	r := introspection.IDLModule{
 		FilePath:   m.FilePath,
 		SHA1:       m.SHA1,
 		Includes:   includes,
