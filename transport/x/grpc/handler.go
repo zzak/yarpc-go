@@ -23,6 +23,7 @@ package grpc
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"time"
 
 	"go.uber.org/multierr"
@@ -95,6 +96,7 @@ func (h *handler) getTransportRequest(ctx context.Context, decodeFunc func(inter
 	if md == nil || !ok {
 		return nil, fmt.Errorf("cannot get metadata from ctx: %v", ctx)
 	}
+	log.Printf("HERE IS THE INCOMING METADATA FROM metadata.FromIncomingContext: %+v", md)
 	transportRequest := &transport.Request{}
 	if err := populateTransportRequest(md, transportRequest); err != nil {
 		return nil, err

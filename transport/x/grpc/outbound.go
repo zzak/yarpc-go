@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"log"
 	"sync"
 	"time"
 
@@ -122,6 +123,7 @@ func (o *Outbound) invoke(
 	if responseMD != nil {
 		callOptions = []grpc.CallOption{grpc.Header(responseMD)}
 	}
+	log.Printf("HERE IS THE OUTGOING METADATA THAT IS ADDED TO CONTEXT USING metadata.NewOutgoingContext: %+v", md)
 	if err := grpc.Invoke(
 		metadata.NewContext(ctx, md),
 		fullMethod,
