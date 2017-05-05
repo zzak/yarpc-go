@@ -33,6 +33,17 @@ type dispatcherIdl struct {
 	Name       string
 	ID         string
 	IDLModules []introspection.IDLModule
+	IDLTree    introspection.IDLTree
+}
+
+type IDLTreeHelper struct {
+	DispatcherName string
+	Tree           *introspection.IDLTree
+}
+
+func wrapIDLTree(dname string, t *introspection.IDLTree) IDLTreeHelper {
+	sort.Sort(t.Modules)
+	return IDLTreeHelper{dname, t}
 }
 
 var idlPage = page{
@@ -86,10 +97,13 @@ var idlPage = page{
 			} else {
 				sort.Sort(idls)
 			}
+			idltree := d.Procedures.IDLTree()
+			idltree.Compact()
 			data.Dispatchers = append(data.Dispatchers, dispatcherIdl{
 				Name:       d.Name,
 				ID:         d.ID,
 				IDLModules: idls,
+				IDLTree:    idltree,
 			})
 		}
 
@@ -137,7 +151,38 @@ var idlPage = page{
 		</tr>
 		{{end}}
 	</table>
+	<div class="tree">
+		{{ template "idltree" (wrapIDLtree .Name .IDLTree) }}
+	</div>
 {{end}}
 {{end}}
+{{ define "idltree" }}
+{{ $dname := .DispatcherName }}
+{{ with .Tree }}
+<ul>
+	{{range .Modules}}
+		<li><div>
+			<span class="filename">
+				<a href="{{$dname}}/{{.FilePath}}">{{pathBase .FilePath}}</a>
+			</span>
+			<span class="sha1">
+				{{ .SHA1 }}
+			</span>
+			<span class="includes">
+				{{ range .Includes }}
+					<a href="{{$dname}}/{{.FilePath}}">{{pathBase .FilePath}}</a>
+				{{ end }}
+			</span>
+		</div></li>
+	{{end}}
+	{{range $dir, $subTree := .SubTrees}}
+		<li>
+			<div>{{ $dir }}/</div>
+			{{ template "idltree" (wrapIDLtree $dname $subTree) }}
+		</li>
+	{{end}}
+</ul>
+{{ end }}
+{{ end }}
 `,
 }

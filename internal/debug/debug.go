@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"path"
 
 	"go.uber.org/yarpc/internal/introspection"
 )
@@ -53,10 +54,15 @@ type DebugPages struct {
 }
 
 func (dp *DebugPages) registerPage(page *page) {
+	funcmap := map[string]interface{}{
+		"pathBase":    path.Base,
+		"wrapIDLtree": wrapIDLTree,
+	}
+
 	// We do not .Clone() the base template, but reparse it every time. Because
 	// of a race condition/memory leak when template.Clone() is used in
 	// conjunction with template blocks on Go<=1.8.
-	base := template.Must(template.New("base").Parse(baseHTML))
+	base := template.Must(template.New("base").Funcs(funcmap).Parse(baseHTML))
 	page.tmpl = template.Must(base.Parse(page.html))
 	dp.pages[page.path] = page
 }
@@ -95,27 +101,29 @@ func (dp *DebugPages) RegisterOn(mux HTTPMux) {
 }
 
 const baseHTML = `
+<!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8" />
 		<title>{{ block "title" . }}yarpc{{ end }}</title>
 		<style type="text/css">
 			body {
 				font-family: "Courier New", Courier, monospace;
 			}
-			table {
+			table.spreadsheet {
 				color:#333333;
 				border-width: 1px;
 				border-color: #3A3A3A;
 				border-collapse: collapse;
 			}
-			table th {
+			table.spreadsheet th {
 				border-width: 1px;
 				padding: 8px;
 				border-style: solid;
 				border-color: #3A3A3A;
 				background-color: #B3B3B3;
 			}
-			table td {
+			table.spreadsheet td {
 				border-width: 1px;
 				padding: 8px;
 				border-style: solid;
@@ -137,6 +145,39 @@ const baseHTML = `
 				float: left;
 				font-size: small;
 				text-align: right;
+			}
+			div.tree ul {
+				padding: 0;
+				margin: 0;
+				list-style-type: none;
+				position: relative;
+			}
+			div.tree li {
+				list-style-type: none;
+				border-left: 2px solid #000;
+				margin-left: 1em;
+			}
+			div.tree li div {
+				padding-left: 1em;
+				position: relative;
+			}
+			div.tree li div::before {
+				content:'';
+				position: absolute;
+				top: 0;
+				left: -2px;
+				bottom: 50%;
+				width: 0.75em;
+				border: 2px solid #000;
+				border-top: 0 none transparent;
+				border-right: 0 none transparent;
+			}
+			div.tree ul > li:last-child {
+				border-left: 2px solid transparent;
+			}
+			span.filenamesds {
+				display: inline-block;
+				width: 50em;
 			}
 		</style>
 	</head>

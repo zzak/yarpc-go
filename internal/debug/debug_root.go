@@ -43,7 +43,7 @@ var rootPage = page{
 {{range .Dispatchers}}
 	<hr />
 	<h2>Dispatcher "{{.Name}}" <small>({{.ID}})</small></h2>
-	<table>
+	<table class="spreadsheet">
 		<tr>
 			<th>Procedure</th>
 			<th>Encoding</th>
@@ -68,7 +68,7 @@ var rootPage = page{
 		{{end}}
 	</table>
 	<h3>Inbounds</h3>
-	<table>
+	<table class="spreadsheet">
 		<tr>
 			<th>Transport</th>
 			<th>Endpoint</th>
@@ -83,7 +83,7 @@ var rootPage = page{
 		{{end}}
 	</table>
 	<h3>Outbounds</h3>
-	<table>
+	<table class="spreadsheet">
 		<thead>
 		<tr>
 			<th>Outbound Key</th>

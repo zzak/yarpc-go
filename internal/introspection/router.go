@@ -21,6 +21,8 @@
 package introspection
 
 import (
+	"strings"
+
 	"go.uber.org/yarpc/api/transport"
 )
 
@@ -111,4 +113,65 @@ func (ims IDLModules) Less(i int, j int) bool {
 
 func (ims IDLModules) Swap(i int, j int) {
 	ims[i], ims[j] = ims[j], ims[i]
+}
+
+type IDLTree struct {
+	SubTrees map[string]*IDLTree
+	Modules  IDLModules
+}
+
+func (ps Procedures) IDLTree() IDLTree {
+	seen := make(map[string]struct{})
+	var r IDLTree
+	var collect func(m IDLModule)
+	collect = func(m IDLModule) {
+		if _, ok := seen[m.FilePath]; !ok {
+			seen[m.FilePath] = struct{}{}
+			n := &r
+			parts := strings.Split(m.FilePath, "/")
+			for i, part := range parts {
+				if i == len(parts)-1 {
+					continue
+				}
+				if n.SubTrees == nil {
+					newNode := IDLTree{}
+					n.SubTrees = map[string]*IDLTree{part: &newNode}
+					n = &newNode
+				} else {
+					if subNode, ok := n.SubTrees[part]; ok {
+						n = subNode
+					} else {
+						newNode := IDLTree{}
+						n.SubTrees[part] = &newNode
+						n = &newNode
+					}
+				}
+			}
+			n.Modules = append(n.Modules, m)
+		}
+		for _, i := range m.Includes {
+			collect(i)
+		}
+	}
+	for _, p := range ps {
+		if p.IDLEntryPoint != nil {
+			collect(*p.IDLEntryPoint)
+		}
+	}
+	return r
+}
+
+func (it *IDLTree) Compact() {
+	for _, l1tree := range it.SubTrees {
+		l1tree.Compact()
+	}
+	for l1dir, l1tree := range it.SubTrees {
+		if len(l1tree.SubTrees) == 1 && len(l1tree.Modules) == 0 {
+			for l2dir, l2tree := range l1tree.SubTrees {
+				compactedDir := l1dir + "/" + l2dir
+				it.SubTrees = map[string]*IDLTree{compactedDir: l2tree}
+				break
+			}
+		}
+	}
 }

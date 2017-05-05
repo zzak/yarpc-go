@@ -34,6 +34,9 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/kv"
 	"go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/kv/keyvalueserver"
+	"go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/many/services"
+	kvsrv "go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/many/services/keyvalueserver"
+	"go.uber.org/yarpc/internal/examples/thrift-keyvalue/keyvalue/many/unions"
 	"go.uber.org/yarpc/x/yarpcmeta"
 
 	"go.uber.org/yarpc"
@@ -119,6 +122,9 @@ func do() error {
 		Inbounds: yarpc.Inbounds{inbound},
 	})
 
+	h := kvh{}
+	dispatcher.Register(kvsrv.New(&h))
+
 	handler := handler{items: make(map[string]string)}
 	dispatcher.Register(keyvalueserver.New(&handler))
 
@@ -130,7 +136,7 @@ func do() error {
 
 	i := dispatcher.Introspect()
 	PrettyPrint(i)
-	PrettyPrint(i.Procedures.IDLModules())
+	PrettyPrint(i.Procedures.IDLTree())
 
 	select {} // block forever
 	return nil
@@ -139,4 +145,30 @@ func do() error {
 func PrettyPrint(v interface{}) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	println(string(b))
+}
+
+type kvh struct{}
+
+func (h *kvh) DeleteValue(ctx context.Context, Key *services.Key) error {
+	panic("not implemented")
+}
+
+func (h *kvh) GetManyValues(ctx context.Context, Range []services.Key) ([]*unions.ArbitraryValue, error) {
+	panic("not implemented")
+}
+
+func (h *kvh) GetValue(ctx context.Context, Key *services.Key) (*unions.ArbitraryValue, error) {
+	panic("not implemented")
+}
+
+func (h *kvh) SetValue(ctx context.Context, Key *services.Key, Value *unions.ArbitraryValue) error {
+	panic("not implemented")
+}
+
+func (h *kvh) SetValueV2(ctx context.Context, Key services.Key, Value *unions.ArbitraryValue) error {
+	panic("not implemented")
+}
+
+func (h *kvh) Size(ctx context.Context) (int64, error) {
+	panic("not implemented")
 }
