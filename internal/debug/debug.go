@@ -146,38 +146,12 @@ const baseHTML = `
 				font-size: small;
 				text-align: right;
 			}
-			div.tree ul {
-				padding: 0;
-				margin: 0;
-				list-style-type: none;
-				position: relative;
-			}
-			div.tree li {
-				list-style-type: none;
-				border-left: 2px solid #000;
-				margin-left: 1em;
-			}
-			div.tree li div {
+			table.tree td {
 				padding-left: 1em;
-				position: relative;
+				padding-right: 1em;
 			}
-			div.tree li div::before {
-				content:'';
-				position: absolute;
-				top: 0;
-				left: -2px;
-				bottom: 50%;
-				width: 0.75em;
-				border: 2px solid #000;
-				border-top: 0 none transparent;
-				border-right: 0 none transparent;
-			}
-			div.tree ul > li:last-child {
-				border-left: 2px solid transparent;
-			}
-			span.filenamesds {
-				display: inline-block;
-				width: 50em;
+			:target {
+				background-color: #ffa;
 			}
 		</style>
 	</head>

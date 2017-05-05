@@ -38,12 +38,13 @@ type dispatcherIdl struct {
 
 type IDLTreeHelper struct {
 	DispatcherName string
+	Indent         int
 	Tree           *introspection.IDLTree
 }
 
-func wrapIDLTree(dname string, t *introspection.IDLTree) IDLTreeHelper {
+func wrapIDLTree(dname string, i int, t *introspection.IDLTree) IDLTreeHelper {
 	sort.Sort(t.Modules)
-	return IDLTreeHelper{dname, t}
+	return IDLTreeHelper{dname, i + 1, t}
 }
 
 var idlPage = page{
@@ -132,56 +133,48 @@ var idlPage = page{
 {{range .Dispatchers}}
 	<hr />
 	<h2>Dispatcher "{{.Name}}" <small>({{.ID}})</small></h2>
-	<table>
+	<table class="tree">
 		<tr>
 			<th>File</th>
 			<th>SHA1</th>
 			<th>Includes</th>
 		</tr>
-		{{$dname := .Name}}
-		{{range .IDLModules}}
-		<tr>
-			<td><a href="{{$dname}}/{{.FilePath}}">{{.FilePath}}</a></td>
-			<td>{{.SHA1}}</td>
-			<td>
-			{{ range .Includes }}
-				<a href="{{$dname}}/{{.FilePath}}">{{.FilePath}}</a>
-			{{ end }}
-			</td>
-		</tr>
-		{{end}}
-	</table>
-	<div class="tree">
-		{{ template "idltree" (wrapIDLtree .Name .IDLTree) }}
+		{{ template "idltree" (wrapIDLtree .Name -1 .IDLTree) }}
 	</div>
 {{end}}
 {{end}}
 {{ define "idltree" }}
 {{ $dname := .DispatcherName }}
+{{ $indent := .Indent }}
 {{ with .Tree }}
-<ul>
 	{{range .Modules}}
-		<li><div>
-			<span class="filename">
-				<a href="{{$dname}}/{{.FilePath}}">{{pathBase .FilePath}}</a>
-			</span>
-			<span class="sha1">
-				{{ .SHA1 }}
-			</span>
-			<span class="includes">
-				{{ range .Includes }}
+		<tr>
+			<td style="padding-left: {{ $indent }}em">
+				<div class="filename" id="{{$dname}}/{{.FilePath}}">
 					<a href="{{$dname}}/{{.FilePath}}">{{pathBase .FilePath}}</a>
+				<div>
+			</td>
+			<td class="sha1">
+				{{ .SHA1 }}
+			</td>
+			<td class="includes">
+				{{ range .Includes }}
+					<a class="anchor" href="#{{$dname}}/{{.FilePath}}">{{pathBase .FilePath}}</a>
 				{{ end }}
-			</span>
-		</div></li>
+			</td>
+		</tr>
 	{{end}}
 	{{range $dir, $subTree := .SubTrees}}
-		<li>
-			<div>{{ $dir }}/</div>
-			{{ template "idltree" (wrapIDLtree $dname $subTree) }}
-		</li>
+		<tr>
+			<td style="padding-left: {{ $indent }}em">
+				<div class="filename">
+					{{ $dir }}/
+				</div>
+			</td>
+		</tr>
+		{{ template "idltree" (wrapIDLtree $dname $indent $subTree) }}
 	{{end}}
-</ul>
+</tr>
 {{ end }}
 {{ end }}
 `,
