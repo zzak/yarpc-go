@@ -8,6 +8,11 @@ jobs:
     resource_class: large
     steps:
       - checkout
+      - setup_remote_docker:
+          reusable: true
+          # run tests run on separate docker engines to avoid interference and
+          # and resource contention
+          exclusive: true
       - restore_cache:
           key: yarpc-go
       - run:
